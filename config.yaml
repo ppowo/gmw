@@ -1,0 +1,84 @@
+# GMW Configuration
+
+projects:
+  # Sinfomar - Multiple repos in one directory, domain mode WildFly
+  sinfomar:
+    # Path detection
+    base_path: ~/Work/SinfomarSuite
+
+    # Build settings
+    default_profile: LOCAL
+    available_profiles: [LOCAL, TEST, PROD]
+    profile_overrides:
+      TEST: [TEST, '!LOCAL', '!PROD']
+      PROD: [PROD, '!LOCAL', '!PROD']
+    skip_tests: true
+
+    # Local WildFly
+    wildfly_root: ~/ApplicationServer/wildfly-sinfomar
+    wildfly_mode: domain
+    server_group: other-server-group
+
+    # Remote deployment (instructions only)
+    remote:
+      host: TEST-SINFOMAR-TRIESTE-111
+      user: root
+      wildfly_path: /opt/wildfly
+      restart_cmd: systemctl restart wildfly
+
+    # Module mappings (path for global modules, "" for normal deployment)
+    modules:
+      # Global modules
+      AllWebServiceClient: modules/ejbpcs/main
+      EJBPcs: modules/ejbpcs/main
+      EJBPcsRemote: modules/ejbpcs/main
+
+      # Normal deployments
+      # Add your normal modules here with empty string
+      # PcsWeb: ""  # ignored
+
+  # MTO - Single repo with multi-module Maven, standalone mode WildFly
+  mto:
+    # Path detection
+    base_path: ~/Work/mto-suite
+    repo_root: ~/Work/mto-suite
+
+    # Build settings (no profiles)
+    # Disable Sinfomar profiles to prevent interference
+    profile_overrides:
+      "": ['!LOCAL', '!TEST', '!PROD']
+    skip_tests: true
+
+    # Local WildFly
+    wildfly_root: ~/ApplicationServer/wildfly-mto-3_0
+    wildfly_mode: standalone
+
+    # Remote deployment
+    remote:
+      host: TEST-MTO-METROCARGO-101
+      user: root
+      wildfly_path: /wildfly
+      restart_cmd: systemctl restart wildfly
+
+    # Module mappings (path for global modules, "" for normal deployment)
+    modules:
+      # Global modules
+      EJBMtoRemote: modules/ejbmto/main
+
+      # Normal deployments
+      SinfoMto: ""
+      EJBMto: ""
+
+# Restart detection rules
+restart_rules:
+  global_module: true
+  patterns:
+    - match: "entities/.*\\.java"
+      reason: "Entity class modification"
+      severity: required
+    - match: "hibernate\\.cfg\\.xml"
+      reason: "Hibernate configuration change"
+      severity: required
+    - match: "EJB.*\\.java"
+      reason: "EJB implementation change"
+      severity: recommended
