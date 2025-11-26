@@ -12,14 +12,14 @@ import (
 
 // ProjectInfo contains detected project information
 type ProjectInfo struct {
-	Name              string // "sinfomar" or "mto"
-	Config            *config.ProjectConfig
-	ModuleName        string // Module name (e.g., "EJBPcs", "EJBMto")
-	ModulePath        string // Absolute path to module directory
-	RepoRoot          string // Repository root (for multi-module projects)
-	Packaging         string // "jar" or "war"
-	DeploymentPath    string // Module deployment path (for global modules)
-	IsGlobalModule    bool   // Whether this is a global module
+	Name           string // "sinfomar" or "mto"
+	Config         *config.ProjectConfig
+	ModuleName     string // Module name (e.g., "EJBPcs", "EJBMto")
+	ModulePath     string // Absolute path to module directory
+	RepoRoot       string // Repository root (for multi-module projects)
+	Packaging      string // "jar" or "war"
+	DeploymentPath string // Module deployment path (for global modules)
+	IsGlobalModule bool   // Whether this is a global module
 }
 
 // PomXML represents a minimal Maven POM structure

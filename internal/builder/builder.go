@@ -293,10 +293,11 @@ func (b *Builder) showRestartGuidance() {
 		return
 	}
 
-	if severity == "recommended" {
+	switch severity {
+	case "recommended":
 		fmt.Println("⚠️  RESTART RECOMMENDED")
 		fmt.Printf("Reason: %s\n", reason)
-	} else if severity == "required" {
+	case "required":
 		fmt.Println("⚠️  RESTART REQUIRED")
 		fmt.Printf("Reason: %s\n", reason)
 	}
@@ -312,9 +313,10 @@ func (b *Builder) showRestartGuidance() {
 	fmt.Printf(" --command=\":shutdown\"\n")
 
 	// Show alias if available
-	if b.projectInfo.Name == "sinfomar" {
+	switch b.projectInfo.Name {
+	case "sinfomar":
 		fmt.Printf("  sin-wildfly\n")
-	} else if b.projectInfo.Name == "mto" {
+	case "mto":
 		fmt.Printf("  mto-wildfly\n")
 	}
 }

@@ -211,10 +211,11 @@ func (d *Deployer) checkRestartRequired(isGlobal bool, artifactName string) {
 		return
 	}
 
-	if severity == "recommended" {
+	switch severity {
+	case "recommended":
 		fmt.Println("⚠️  RESTART RECOMMENDED")
 		fmt.Printf("Reason: %s\n", reason)
-	} else if severity == "required" {
+	case "required":
 		fmt.Println("⚠️  RESTART REQUIRED")
 		fmt.Printf("Reason: %s\n", reason)
 	}
@@ -230,9 +231,10 @@ func (d *Deployer) checkRestartRequired(isGlobal bool, artifactName string) {
 	fmt.Printf(" --command=\":shutdown\"\n")
 
 	// Show alias if available
-	if d.projectInfo.Name == "sinfomar" {
+	switch d.projectInfo.Name {
+	case "sinfomar":
 		fmt.Printf("  sin-wildfly\n")
-	} else if d.projectInfo.Name == "mto" {
+	case "mto":
 		fmt.Printf("  mto-wildfly\n")
 	}
 }

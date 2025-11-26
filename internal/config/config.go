@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v3"
@@ -11,8 +12,8 @@ import (
 
 // Config represents the complete configuration
 type Config struct {
-	Projects map[string]*ProjectConfig `yaml:"projects"`
-	RestartRules *RestartRules          `yaml:"restart_rules"`
+	Projects     map[string]*ProjectConfig `yaml:"projects"`
+	RestartRules *RestartRules             `yaml:"restart_rules"`
 }
 
 // ProjectConfig represents configuration for a single project
@@ -22,15 +23,15 @@ type ProjectConfig struct {
 	RepoRoot string `yaml:"repo_root"` // Git repo root (for multi-module projects like mto)
 
 	// Build settings
-	DefaultProfile string            `yaml:"default_profile"`   // Default Maven profile (sinfomar only)
-	AvailableProfiles []string       `yaml:"available_profiles"` // Valid profiles
-	ProfileOverrides map[string][]string `yaml:"profile_overrides"` // Profile override rules
-	SkipTests bool                   `yaml:"skip_tests"`        // Skip tests flag
+	DefaultProfile    string              `yaml:"default_profile"`    // Default Maven profile (sinfomar only)
+	AvailableProfiles []string            `yaml:"available_profiles"` // Valid profiles
+	ProfileOverrides  map[string][]string `yaml:"profile_overrides"`  // Profile override rules
+	SkipTests         bool                `yaml:"skip_tests"`         // Skip tests flag
 
 	// WildFly settings
-	WildFlyRoot string `yaml:"wildfly_root"`  // WildFly installation root
-	WildFlyMode string `yaml:"wildfly_mode"`  // "domain" or "standalone"
-	ServerGroup string `yaml:"server_group"`  // For domain mode
+	WildFlyRoot string `yaml:"wildfly_root"` // WildFly installation root
+	WildFlyMode string `yaml:"wildfly_mode"` // "domain" or "standalone"
+	ServerGroup string `yaml:"server_group"` // For domain mode
 
 	// Remote deployment (for instructions only)
 	Remote *RemoteConfig `yaml:"remote"`
@@ -40,16 +41,16 @@ type ProjectConfig struct {
 	Modules map[string]string `yaml:"modules"`
 
 	// Deprecated: kept for backwards compatibility
-	GlobalModules map[string]*GlobalModuleGroup `yaml:"global_modules,omitempty"`
-	IgnoredModules []string                     `yaml:"ignored_modules,omitempty"`
+	GlobalModules  map[string]*GlobalModuleGroup `yaml:"global_modules,omitempty"`
+	IgnoredModules []string                      `yaml:"ignored_modules,omitempty"`
 }
 
 // RemoteConfig represents remote server configuration
 type RemoteConfig struct {
-	Host         string `yaml:"host"`
-	User         string `yaml:"user"`
-	WildFlyPath  string `yaml:"wildfly_path"`
-	RestartCmd   string `yaml:"restart_cmd"`
+	Host        string `yaml:"host"`
+	User        string `yaml:"user"`
+	WildFlyPath string `yaml:"wildfly_path"`
+	RestartCmd  string `yaml:"restart_cmd"`
 }
 
 // GlobalModuleGroup represents a group of global modules
@@ -163,12 +164,7 @@ func (g *GlobalModuleGroup) GetRemotePath() string {
 
 // IsIgnored checks if a module should be ignored
 func (p *ProjectConfig) IsIgnored(moduleName string) bool {
-	for _, ignored := range p.IgnoredModules {
-		if ignored == moduleName {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(p.IgnoredModules, moduleName)
 }
 
 // GetProfileArgs returns Maven profile arguments for a given profile
