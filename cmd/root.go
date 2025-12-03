@@ -7,9 +7,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "gmw",
-	Short: "Go Maven Wrapper - Interactive deployment helper for WildFly projects",
-	Long: `GMW (Go Maven Wrapper) helps you build and deploy Maven projects to WildFly.
+	Use:   "jmw",
+	Short: "Java Maven WildFly - Interactive deployment helper for WildFly projects",
+	Long: `JMW (Java Maven WildFly) helps you build and deploy Maven projects to WildFly.
 
 It provides interactive, guided workflows for:
 - Building Maven modules with correct profiles
@@ -18,9 +18,9 @@ It provides interactive, guided workflows for:
 - Detecting when WildFly restarts are needed
 
 Examples:
-  gmw build              # Build current module with default profile
-  gmw build TEST         # Build with TEST profile (sinfomar only)
-  gmw deploy ./target/EJBPcs.jar   # Deploy artifact locally`,
+  jmw build              # Build current module with default profile
+  jmw build TEST         # Build with TEST profile (sinfomar only)
+  jmw deploy ./target/EJBPcs.jar   # Deploy artifact locally`,
 }
 
 func Execute() {

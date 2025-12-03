@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/ppowo/gmw/internal/config"
-	"github.com/ppowo/gmw/internal/deployer"
-	"github.com/ppowo/gmw/internal/detector"
+	"github.com/ppowo/jmw/internal/config"
+	"github.com/ppowo/jmw/internal/deployer"
+	"github.com/ppowo/jmw/internal/detector"
 	"github.com/spf13/cobra"
 )
 
@@ -24,9 +24,9 @@ The command will:
 7. Show remote deployment instructions
 
 Examples:
-  gmw deploy ./target/EJBPcs.jar
-  gmw deploy ./target/SinfoMto.war
-  gmw deploy ../EJBMto/target/EJBMto.jar`,
+  jmw deploy ./target/EJBPcs.jar
+  jmw deploy ./target/SinfoMto.war
+  jmw deploy ../EJBMto/target/EJBMto.jar`,
 	Args: cobra.ExactArgs(1),
 	RunE: runDeploy,
 }

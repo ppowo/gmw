@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/ppowo/gmw/internal/builder"
-	"github.com/ppowo/gmw/internal/config"
-	"github.com/ppowo/gmw/internal/detector"
+	"github.com/ppowo/jmw/internal/builder"
+	"github.com/ppowo/jmw/internal/config"
+	"github.com/ppowo/jmw/internal/detector"
 	"github.com/spf13/cobra"
 )
 
@@ -17,12 +17,12 @@ var buildCmd = &cobra.Command{
 Auto-detects the project (sinfomar/mto) from the current directory.
 
 For sinfomar:
-  gmw build        # Uses TEST profile (default)
-  gmw build TEST   # Uses TEST profile
-  gmw build PROD   # Uses PROD profile
+  jmw build        # Uses TEST profile (default)
+  jmw build TEST   # Uses TEST profile
+  jmw build PROD   # Uses PROD profile
 
 For mto:
-  gmw build        # Plain build, no profiles
+  jmw build        # Plain build, no profiles
 
 The command will:
 1. Detect which project you're in

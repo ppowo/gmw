@@ -77,12 +77,12 @@ type RestartPattern struct {
 func Load(configPath string) (*Config, error) {
 	// Resolve config path
 	if !filepath.IsAbs(configPath) {
-		// Look in gmw directory
+		// Look in jmw directory
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get home directory: %w", err)
 		}
-		configPath = filepath.Join(homeDir, "Personal", "gmw", configPath)
+		configPath = filepath.Join(homeDir, "Personal", "jmw", configPath)
 	}
 
 	data, err := os.ReadFile(configPath)

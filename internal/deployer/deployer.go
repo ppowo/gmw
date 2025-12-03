@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ppowo/gmw/internal/config"
-	"github.com/ppowo/gmw/internal/detector"
+	"github.com/ppowo/jmw/internal/config"
+	"github.com/ppowo/jmw/internal/detector"
 )
 
 // Deployer handles deployment operations

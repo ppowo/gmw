@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ppowo/gmw/internal/config"
+	"github.com/ppowo/jmw/internal/config"
 )
 
 // ProjectInfo contains detected project information

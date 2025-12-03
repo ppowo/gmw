@@ -1,4 +1,4 @@
-module github.com/ppowo/gmw
+module github.com/ppowo/jmw
 
 go 1.25.4
 

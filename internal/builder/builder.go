@@ -10,8 +10,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ppowo/gmw/internal/config"
-	"github.com/ppowo/gmw/internal/detector"
+	"github.com/ppowo/jmw/internal/config"
+	"github.com/ppowo/jmw/internal/detector"
 )
 
 // Builder handles Maven build operations

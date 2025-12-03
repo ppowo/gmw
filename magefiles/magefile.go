@@ -67,9 +67,9 @@ func getInstallDir() (string, error) {
 	return candidateDir, nil
 }
 
-// Install builds and installs gmw to ~/.local/bin or ~/.bio/bin
+// Install builds and installs jmw to ~/.local/bin or ~/.bio/bin
 func Install() error {
-	fmt.Println("Installing gmw...")
+	fmt.Println("Installing jmw...")
 
 	installDir, err := getInstallDir()
 	if err != nil {
@@ -82,9 +82,9 @@ func Install() error {
 
 	mg.Deps(Build)
 
-	binary := "gmw"
+	binary := "jmw"
 	if runtime.GOOS == "windows" {
-		binary = "gmw.exe"
+		binary = "jmw.exe"
 	}
 
 	src := "bin/" + binary
@@ -107,10 +107,10 @@ func Install() error {
 	return nil
 }
 
-// Build compiles the gmw binary
+// Build compiles the jmw binary
 func Build() error {
-	fmt.Println("Building gmw...")
-	return sh.Run("go", "build", "-o", "bin/gmw", ".")
+	fmt.Println("Building jmw...")
+	return sh.Run("go", "build", "-o", "bin/jmw", ".")
 }
 
 // Clean removes build artifacts
