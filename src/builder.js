@@ -12,16 +12,15 @@ async function buildModule(detection, profile, options = {}) {
   const skipTests = options.skipTests || projectConfig.skip_tests || false;
 
   console.log(chalk.blue('=== Build Plan ==='));
-  console.log('Project: ' + project);
-  console.log('Module: ' + moduleInfo.artifactId);
-  console.log('Packaging: ' + moduleInfo.packaging);
-  console.log('Path: ' + moduleInfo.path);
+  console.log(`Project: ${project}`);
+  console.log(`Module: ${moduleInfo.artifactId}`);
+  console.log(`Packaging: ${moduleInfo.packaging}`);
+  console.log(`Path: ${moduleInfo.path}`);
   console.log('');
 
   // Show profile
   const effectiveProfile = profile || projectConfig.default_profile || 'none';
-  console.log('Profile: ' + effectiveProfile);
-  console.log('');
+  console.log(`Profile: ${effectiveProfile}`);
 
   // Build Maven command
   const cmdArgs = buildMavenCommand(moduleInfo, effectiveProfile, skipTests, projectConfig);
@@ -43,7 +42,6 @@ async function buildModule(detection, profile, options = {}) {
     // Execute Maven command with Bun's $ shell
     await $`cd ${cwd} && mvn ${cmdArgs}`;
 
-    console.log('');
     console.log(chalk.green('Build completed successfully'));
 
     // Show artifacts, restart guidance, and get artifact path
@@ -117,7 +115,7 @@ function getProfiles(profile, projectConfig) {
   // Check if profile is in available_profiles
   const available = projectConfig.available_profiles || [];
   if (available.length > 0 && !available.includes(normalizedProfile)) {
-    const msg = 'Profile \'' + normalizedProfile + '\' not available. Available: ' + available.join(', ');
+    const msg = `Profile '${normalizedProfile}' not available. Available: ${available.join(', ')}`;
     throw new Error(msg);
   }
 
@@ -136,7 +134,6 @@ async function showRestartGuidance(moduleInfo, projectConfig) {
   if (moduleInfo.isGlobalModule) {
     console.log(chalk.red('Restart required: YES'));
     console.log('Reason: Global module deployment');
-    console.log('');
     return;
   }
 
@@ -144,7 +141,6 @@ async function showRestartGuidance(moduleInfo, projectConfig) {
   if (moduleInfo.packaging === 'war') {
     console.log(chalk.yellow('Restart required: NO'));
     console.log('Reason: WAR hot-deployment');
-    console.log('');
     return;
   }
 
@@ -152,7 +148,6 @@ async function showRestartGuidance(moduleInfo, projectConfig) {
   if (!restartRules || !restartRules.patterns) {
     console.log(chalk.yellow('Restart required: CHECK MANUALLY'));
     console.log('Reason: No restart rules configured');
-    console.log('');
     return;
   }
 
@@ -164,7 +159,6 @@ async function showRestartGuidance(moduleInfo, projectConfig) {
     if (modifiedFiles.length === 0) {
       console.log(chalk.green('Restart required: NO'));
       console.log('Reason: No files modified');
-      console.log('');
       return;
     }
 
@@ -182,7 +176,6 @@ async function showRestartGuidance(moduleInfo, projectConfig) {
     if (matches.length === 0) {
       console.log(chalk.green('Restart required: NO'));
       console.log('Reason: No critical files modified');
-      console.log('');
       return;
     }
 
@@ -213,7 +206,7 @@ async function showRestartGuidance(moduleInfo, projectConfig) {
 /**
  * Show built artifacts
  */
-function showArtifacts(moduleInfo, projectConfig) {
+function showArtifacts(moduleInfo) {
   console.log(chalk.blue('=== Artifacts ==='));
 
   const targetPath = path.join(moduleInfo.path, 'target');
@@ -225,10 +218,8 @@ function showArtifacts(moduleInfo, projectConfig) {
   }
 
   artifacts.forEach(artifact => {
-    console.log('  ' + chalk.green(artifact));
+    console.log(`  ${chalk.green(artifact)}`);
   });
-
-  console.log('');
 
   // Return the first artifact path
   return artifacts[0];
@@ -238,7 +229,7 @@ function showArtifacts(moduleInfo, projectConfig) {
  * Show artifacts and restart guidance
  */
 async function showArtifactsAndGuidance(moduleInfo, projectConfig) {
-  const artifactPath = showArtifacts(moduleInfo, projectConfig);
+  const artifactPath = showArtifacts(moduleInfo);
   await showRestartGuidance(moduleInfo, projectConfig);
   return artifactPath;
 }

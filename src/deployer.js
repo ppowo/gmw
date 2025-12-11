@@ -6,15 +6,14 @@ import readline from 'readline';
 /**
  * Deploy artifact to WildFly
  */
-async function deployArtifact(artifactPath, detection, clientName, clientConfig) {
+async function deployArtifact(artifactPath, detection) {
   const { project, projectConfig, module: moduleInfo } = detection;
 
   console.log(chalk.blue('=== Deployment Plan ==='));
-  console.log('Project: ' + project);
-  console.log('Artifact: ' + artifactPath);
-  console.log('Module: ' + moduleInfo.artifactId);
-  console.log('Type: ' + (moduleInfo.isGlobalModule ? 'Global Module' : 'Normal Deployment'));
-  console.log('');
+  console.log(`Project: ${project}`);
+  console.log(`Artifact: ${artifactPath}`);
+  console.log(`Module: ${moduleInfo.artifactId}`);
+  console.log(`Type: ${moduleInfo.isGlobalModule ? 'Global Module' : 'Normal Deployment'}`);
 
   // Get WildFly configuration (local deployment)
   const wildflyConfig = getWildflyConfig(projectConfig, null);
@@ -24,7 +23,6 @@ async function deployArtifact(artifactPath, detection, clientName, clientConfig)
   if (wildflyConfig.mode === 'domain') {
     console.log(chalk.yellow('Server Group:'), wildflyConfig.serverGroup);
   }
-  console.log('');
 
   // Confirm deployment
   const confirmed = await confirm('Proceed with deployment?');
@@ -51,8 +49,7 @@ async function deployArtifact(artifactPath, detection, clientName, clientConfig)
     if (defaultClientName && projectConfig.clients && projectConfig.clients[defaultClientName]) {
       const defaultClient = projectConfig.clients[defaultClientName];
       console.log('');
-      console.log(chalk.blue('=== Remote Deployment Instructions (Default Client: ' + defaultClientName + ') ==='));
-      console.log('');
+      console.log(chalk.blue(`=== Remote Deployment Instructions (Default Client: ${defaultClientName}) ===`));
       showRemoteDeploymentGuide(artifactPath, wildflyConfig, defaultClient);
     }
 
@@ -70,9 +67,8 @@ function deployGlobalModule(artifactPath, wildflyConfig, moduleInfo) {
   const modulePath = path.join(modulesDir, moduleInfo.deploymentPath, 'main');
 
   console.log(chalk.blue('=== Global Module Deployment ==='));
-  console.log('Source: ' + artifactPath);
-  console.log('Target: ' + modulePath);
-  console.log('');
+  console.log(`Source: ${artifactPath}`);
+  console.log(`Target: ${modulePath}`);
 
   // Copy artifact
   fs.mkdirSync(modulePath, { recursive: true });
@@ -103,8 +99,7 @@ function deployStandalone(artifactPath, wildflyConfig, moduleInfo) {
   const destPath = path.join(deploymentsDir, path.basename(artifactPath));
   const markerPath = path.join(deploymentsDir, path.basename(artifactPath) + '.dodeploy');
 
-  console.log('Target: ' + destPath);
-  console.log('');
+  console.log(`Target: ${destPath}`);
 
   // Copy artifact
   fs.mkdirSync(deploymentsDir, { recursive: true });
@@ -124,12 +119,10 @@ function deployDomain(artifactPath, wildflyConfig, moduleInfo) {
   const artifactName = path.basename(artifactPath);
   const deploymentsDir = path.join(wildflyConfig.root, 'domain', 'deployments');
 
-  console.log('Server Group: ' + wildflyConfig.serverGroup);
-  console.log('Artifact: ' + artifactName);
-  console.log('');
+  console.log(`Server Group: ${wildflyConfig.serverGroup}`);
+  console.log(`Artifact: ${artifactName}`);
   console.log(chalk.yellow('Use jboss-cli.sh to deploy:'));
-  console.log('  deploy ' + artifactPath + ' --server-groups=' + wildflyConfig.serverGroup);
-  console.log('');
+  console.log(`  deploy ${artifactPath} --server-groups=${wildflyConfig.serverGroup}`);
 
   // Copy to deployments dir (for reference)
   fs.mkdirSync(deploymentsDir, { recursive: true });
@@ -171,12 +164,10 @@ function showRestartGuidance(wildflyConfig) {
   console.log(chalk.yellow('Restart command:'));
 
   if (wildflyConfig.mode === 'standalone') {
-    console.log('  ' + wildflyConfig.root + '/bin/shutdown.sh --restart');
+    console.log(`  ${wildflyConfig.root}/bin/shutdown.sh --restart`);
   } else {
-    console.log('  ' + wildflyConfig.root + '/bin/domain.sh --restart');
+    console.log(`  ${wildflyConfig.root}/bin/domain.sh --restart`);
   }
-
-  console.log('');
 }
 
 /**
@@ -192,14 +183,13 @@ function showRemoteDeploymentGuide(artifactPath, wildflyConfig, clientConfig) {
   const sudo = remote.user === 'root' ? '' : 'sudo ';
 
   console.log(chalk.yellow('1. Copy artifact to WildFly:'));
-  console.log('   scp ' + artifactPath + ' ' + remote.user + '@' + remote.host + ':' + deploymentsPath + '/');
+  console.log(`   scp ${artifactPath} ${remote.user}@${remote.host}:${deploymentsPath}/`);
   console.log('');
   console.log(chalk.yellow('2. Trigger hot deployment:'));
-  console.log('   ssh ' + remote.user + '@' + remote.host + ' "' + sudo + 'touch ' + deploymentsPath + '/' + artifactName + '.dodeploy"');
+  console.log(`   ssh ${remote.user}@${remote.host} "${sudo}touch ${deploymentsPath}/${artifactName}.dodeploy"`);
   console.log('');
   console.log(chalk.yellow('3. Watch deployment logs:'));
-  console.log('   ssh ' + remote.user + '@' + remote.host + ' "' + sudo + 'tail -n 20 -f ' + logPath + '"');
-  console.log('');
+  console.log(`   ssh ${remote.user}@${remote.host} "${sudo}tail -n 20 -f ${logPath}"`);
 }
 
 /**

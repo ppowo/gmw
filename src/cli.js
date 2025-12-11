@@ -53,20 +53,20 @@ program
       }
 
       if (options.client && !clientConfig) {
-        console.error(chalk.red('Client \'' + options.client + '\' not found'));
+        console.error(chalk.red(`Client '${options.client}' not found`));
         process.exit(1);
       }
 
-      console.log(chalk.green('Detected project: ' + detection.project));
-      console.log(chalk.green('Module: ' + detection.module.artifactId));
+      console.log(chalk.green(`Detected project: ${detection.project}`));
+      console.log(chalk.green(`Module: ${detection.module.artifactId}`));
 
       if (clientConfig) {
         if (options.client) {
-          console.log(chalk.green('Client: ' + clientName));
+          console.log(chalk.green(`Client: ${clientName}`));
         } else if (detection.projectConfig.default_client) {
-          console.log(chalk.green('Client: ' + clientName + ' (default)'));
+          console.log(chalk.green(`Client: ${clientName} (default)`));
         } else {
-          console.log(chalk.yellow('Client: ' + clientName + ' (first available)'));
+          console.log(chalk.yellow(`Client: ${clientName} (first available)`));
         }
       }
 
@@ -87,7 +87,7 @@ program
       console.log(chalk.blue.bold('\n=== Build Complete ===\n'));
 
     } catch (error) {
-      console.error(chalk.red('\nError: ' + error.message + '\n'));
+      console.error(chalk.red(`\nError: ${error.message}\n`));
       process.exit(1);
     }
   });
@@ -111,21 +111,21 @@ program
 
       // Validate artifact path
       if (!fs.existsSync(artifact)) {
-        throw new Error('Artifact not found: ' + artifact);
+        throw new Error(`Artifact not found: ${artifact}`);
       }
 
-      console.log(chalk.green('Detected project: ' + detection.project));
-      console.log(chalk.green('Module: ' + detection.module.artifactId));
-      console.log(chalk.green('Artifact: ' + artifact));
+      console.log(chalk.green(`Detected project: ${detection.project}`));
+      console.log(chalk.green(`Module: ${detection.module.artifactId}`));
+      console.log(chalk.green(`Artifact: ${artifact}`));
       console.log('');
 
       // Deploy
-      await deployArtifact(artifact, detection, null, null);
+      await deployArtifact(artifact, detection);
 
       console.log(chalk.blue.bold('\n=== Deploy Complete ===\n'));
 
     } catch (error) {
-      console.error(chalk.red('\nError: ' + error.message + '\n'));
+      console.error(chalk.red(`\nError: ${error.message}\n`));
       process.exit(1);
     }
   });
@@ -153,19 +153,19 @@ program
 
       Object.entries(clients).forEach(([name, client]) => {
         const label = chalk.white.bold(name);
-        const remote = client.remote ? client.remote.user + '@' + client.remote.host : 'No remote config';
-        console.log('  ' + label + ': ' + remote);
+        const remote = client.remote ? `${client.remote.user}@${client.remote.host}` : 'No remote config';
+        console.log(`  ${label}: ${remote}`);
       });
 
       if (detection.projectConfig.default_client) {
         console.log('');
-        console.log('Default client: ' + chalk.green(detection.projectConfig.default_client));
+        console.log(`Default client: ${chalk.green(detection.projectConfig.default_client)}`);
       }
 
       console.log('');
 
     } catch (error) {
-      console.error(chalk.red('\nError: ' + error.message + '\n'));
+      console.error(chalk.red(`\nError: ${error.message}\n`));
       process.exit(1);
     }
   });

@@ -31,7 +31,7 @@ function loadConfig(configPath) {
     // Fall back to embedded config (Bun's YAML loader automatically parses it)
     return expandPaths(embeddedConfig);
   } catch (error) {
-    throw new Error('Failed to load config: ' + error.message);
+    throw new Error(`Failed to load config: ${error.message}`);
   }
 }
 
@@ -66,7 +66,7 @@ function getClientConfig(project, clientName) {
 
   if (!project.clients || !project.clients[clientName]) {
     const available = project.clients ? Object.keys(project.clients).join(', ') : 'none';
-    throw new Error('Client \'' + clientName + '\' not found. Available clients: ' + available);
+    throw new Error(`Client '${clientName}' not found. Available clients: ${available}`);
   }
 
   return project.clients[clientName];
