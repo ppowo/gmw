@@ -1,10 +1,11 @@
-const { Command } = require('commander');
-const chalk = require('chalk');
+import { Command } from 'commander';
+import chalk from 'chalk';
+import fs from 'fs';
 
-const { loadConfig, getClientConfig } = require('./config');
-const { detectProject } = require('./detector');
-const { buildModule } = require('./builder');
-const { deployArtifact, getWildflyConfig, showRemoteDeploymentGuide } = require('./deployer');
+import { loadConfig, getClientConfig } from './config.js';
+import { detectProject } from './detector.js';
+import { buildModule } from './builder.js';
+import { deployArtifact, getWildflyConfig, showRemoteDeploymentGuide } from './deployer.js';
 
 const program = new Command();
 
@@ -35,12 +36,21 @@ program
       // Detect project
       const detection = detectProject(config);
 
-      // Get client config if specified
-      const clientConfig = options.client
-        ? getClientConfig(detection.projectConfig, options.client)
-        : (detection.projectConfig.default_client
-            ? getClientConfig(detection.projectConfig, detection.projectConfig.default_client)
-            : null);
+      // Get client config if specified, or use default, or use first available
+      let clientConfig = null;
+      let clientName = null;
+
+      if (options.client) {
+        clientConfig = getClientConfig(detection.projectConfig, options.client);
+        clientName = options.client;
+      } else if (detection.projectConfig.default_client) {
+        clientConfig = getClientConfig(detection.projectConfig, detection.projectConfig.default_client);
+        clientName = detection.projectConfig.default_client;
+      } else if (detection.projectConfig.clients && Object.keys(detection.projectConfig.clients).length > 0) {
+        // Use first available client if no default specified
+        clientName = Object.keys(detection.projectConfig.clients)[0];
+        clientConfig = getClientConfig(detection.projectConfig, clientName);
+      }
 
       if (options.client && !clientConfig) {
         console.error(chalk.red('Client \'' + options.client + '\' not found'));
@@ -50,20 +60,23 @@ program
       console.log(chalk.green('Detected project: ' + detection.project));
       console.log(chalk.green('Module: ' + detection.module.artifactId));
 
-      if (options.client) {
-        console.log(chalk.green('Client: ' + options.client));
-      } else if (detection.projectConfig.default_client) {
-        console.log(chalk.green('Client: ' + detection.projectConfig.default_client + ' (default)'));
+      if (clientConfig) {
+        if (options.client) {
+          console.log(chalk.green('Client: ' + clientName));
+        } else if (detection.projectConfig.default_client) {
+          console.log(chalk.green('Client: ' + clientName + ' (default)'));
+        } else {
+          console.log(chalk.yellow('Client: ' + clientName + ' (first available)'));
+        }
       }
 
       console.log('');
 
       // Build
-      await buildModule(detection, profile, { skipTests: options.skipTests });
+      const artifactPath = await buildModule(detection, profile, { skipTests: options.skipTests });
 
-      // Show remote deployment guide if client configured
-      if (clientConfig) {
-        const artifactPath = 'path/to/artifact'; // This would be the actual built artifact
+      // Show remote deployment guide if client configured and artifact was built
+      if (clientConfig && artifactPath) {
         console.log('');
         console.log(chalk.blue('=== Remote Deployment Commands ==='));
         console.log('');
@@ -97,7 +110,6 @@ program
       const detection = detectProject(config);
 
       // Validate artifact path
-      const fs = require('fs');
       if (!fs.existsSync(artifact)) {
         throw new Error('Artifact not found: ' + artifact);
       }

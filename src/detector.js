@@ -1,6 +1,6 @@
-const fs = require('fs');
-const path = require('path');
-const { XMLParser } = require('fast-xml-parser');
+import fs from 'fs';
+import path from 'path';
+import { XMLParser } from 'fast-xml-parser';
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -100,9 +100,13 @@ function detectModule(pomPath, pom, projectConfig) {
   const moduleConfig = projectConfig.modules?.[artifactId];
   const isGlobalModule = moduleConfig && moduleConfig !== '';
 
-  // Check if this is a multi-module project
-  const modules = pom.project?.modules?.module || [];
-  const isMultiModule = Array.isArray(modules) ? modules.length > 0 : !!modules;
+  // Check if this is part of a multi-module build
+  // Either this pom has modules, OR it has a parent and we're not at the base path
+  const hasModules = pom.project?.modules?.module;
+  const hasParent = pom.project?.parent;
+  const isMultiModule = !!(hasModules || (hasParent && relativePath !== ''));
+
+  const modules = hasModules ? (Array.isArray(hasModules) ? hasModules : [hasModules]) : [];
 
   return {
     artifactId,
@@ -112,11 +116,11 @@ function detectModule(pomPath, pom, projectConfig) {
     isGlobalModule,
     deploymentPath: moduleConfig || '',
     isMultiModule,
-    modules: isMultiModule ? (Array.isArray(modules) ? modules : [modules]) : []
+    modules
   };
 }
 
-module.exports = {
+export {
   detectProject,
   parsePom,
   findPomXml,

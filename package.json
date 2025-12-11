@@ -7,11 +7,11 @@
     "jmw": "dist/cli.js"
   },
   "scripts": {
-    "start": "node src/cli.js",
-    "dev": "node src/cli.js",
-    "build": "node build.js",
+    "start": "bun src/cli.js",
+    "dev": "bun src/cli.js",
+    "build": "bun build.js",
     "clean": "rm -rf dist",
-    "install": "npm run build && mkdir -p ~/.local/bin && cp dist/cli.js ~/.local/bin/jmw && chmod +x ~/.local/bin/jmw",
+    "install": "bun run build && cp dist/jmw ~/.bio/bin/jmw",
     "test": "echo 'No tests specified'",
     "lint": "echo 'No linter configured'"
   },
@@ -28,22 +28,15 @@
   ],
   "author": "ppowo",
   "license": "MIT",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/ppowo/jmw/issues"
   },
   "homepage": "https://github.com/ppowo/jmw#readme",
   "dependencies": {
-    "boxen": "8.0.1",
-    "chalk": "4.1.2",
-    "commander": "14.0.2",
-    "execa": "9.6.1",
-    "fast-xml-parser": "5.3.2",
-    "inquirer": "13.0.2",
-    "js-yaml": "4.1.1",
-    "ora": "9.0.0"
-  },
-  "devDependencies": {
-    "esbuild": "0.23.1"
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "fast-xml-parser": "^5.3.2",
+    "js-yaml": "^4.1.1"
   }
 }

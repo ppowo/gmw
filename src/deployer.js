@@ -1,6 +1,7 @@
-const fs = require('fs');
-const path = require('path');
-const chalk = require('chalk');
+import fs from 'fs';
+import path from 'path';
+import chalk from 'chalk';
+import readline from 'readline';
 
 /**
  * Deploy artifact to WildFly
@@ -184,16 +185,20 @@ function showRestartGuidance(wildflyConfig) {
 function showRemoteDeploymentGuide(artifactPath, wildflyConfig, clientConfig) {
   const remote = clientConfig.remote;
   const artifactName = path.basename(artifactPath);
+  const deploymentsPath = remote.wildfly_path + '/' + wildflyConfig.mode + '/deployments';
+  const logPath = remote.wildfly_path + '/' + wildflyConfig.mode + '/log/server.log';
 
-  console.log(chalk.yellow('SCP command:'));
-  console.log('  scp ' + artifactPath + ' ' + remote.user + '@' + remote.host + ':~/');
+  // Use sudo only if not root
+  const sudo = remote.user === 'root' ? '' : 'sudo ';
+
+  console.log(chalk.yellow('1. Copy artifact to WildFly:'));
+  console.log('   scp ' + artifactPath + ' ' + remote.user + '@' + remote.host + ':' + deploymentsPath + '/');
   console.log('');
-  console.log(chalk.yellow('SSH commands:'));
-  console.log('  # Copy to WildFly');
-  console.log('  ssh ' + remote.user + '@' + remote.host + ' "sudo cp ~/' + artifactName + ' ' + remote.wildfly_path + '/' + wildflyConfig.mode + '/deployments/"');
+  console.log(chalk.yellow('2. Trigger hot deployment:'));
+  console.log('   ssh ' + remote.user + '@' + remote.host + ' "' + sudo + 'touch ' + deploymentsPath + '/' + artifactName + '.dodeploy"');
   console.log('');
-  console.log('  # Restart WildFly');
-  console.log('  ssh ' + remote.user + '@' + remote.host + ' "' + remote.restart_cmd + '"');
+  console.log(chalk.yellow('3. Watch deployment logs:'));
+  console.log('   ssh ' + remote.user + '@' + remote.host + ' "' + sudo + 'tail -n 20 -f ' + logPath + '"');
   console.log('');
 }
 
@@ -202,7 +207,6 @@ function showRemoteDeploymentGuide(artifactPath, wildflyConfig, clientConfig) {
  */
 function confirm(message) {
   return new Promise(resolve => {
-    const readline = require('readline');
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout
@@ -215,7 +219,7 @@ function confirm(message) {
   });
 }
 
-module.exports = {
+export {
   deployArtifact,
   getWildflyConfig,
   deployGlobalModule,

@@ -1,6 +1,8 @@
-const path = require('path');
-const execa = require('execa');
-const chalk = require('chalk');
+import path from 'path';
+import { $ } from 'bun';
+import chalk from 'chalk';
+import readline from 'readline';
+import fs from 'fs';
 
 /**
  * Build a Maven module
@@ -36,16 +38,19 @@ async function buildModule(detection, profile, options = {}) {
 
   // Execute build
   try {
-    const { stdout, stderr } = await execa('mvn', cmdArgs, {
-      cwd: moduleInfo.isMultiModule ? projectConfig.base_path : moduleInfo.path,
-      stdio: 'inherit'
-    });
+    const cwd = moduleInfo.isMultiModule ? projectConfig.base_path : moduleInfo.path;
+
+    // Execute Maven command with Bun's $ shell
+    await $`cd ${cwd} && mvn ${cmdArgs}`;
 
     console.log('');
     console.log(chalk.green('Build completed successfully'));
 
-    // Show artifacts
-    showArtifacts(moduleInfo);
+    // Show artifacts, restart guidance, and get artifact path
+    const artifactPath = await showArtifactsAndGuidance(moduleInfo, projectConfig);
+
+    // Return the artifact path for caller to use
+    return artifactPath;
 
   } catch (error) {
     console.error(chalk.red('Build failed:'), error.message);
@@ -59,10 +64,25 @@ async function buildModule(detection, profile, options = {}) {
 function buildMavenCommand(moduleInfo, profile, skipTests, projectConfig) {
   const args = [];
 
-  // Phase
-  args.push('install');
+  // Always start with clean
+  args.push('clean');
 
-  // Profiles
+  // Lifecycle phase based on packaging type
+  // WAR: final deployable, just package
+  // JAR: library that other modules depend on, install to local repo
+  if (moduleInfo.packaging === 'war') {
+    args.push('package');
+  } else {
+    args.push('install');
+  }
+
+  // Multi-module specific - use relative path for -pl
+  if (moduleInfo.isMultiModule) {
+    args.push('-pl', moduleInfo.relativePath);
+    args.push('-am'); // Also make dependencies
+  }
+
+  // Profiles - keep new syntax with comma separation
   const profiles = getProfiles(profile, projectConfig);
   if (profiles.length > 0) {
     args.push('-P', profiles.join(','));
@@ -73,12 +93,6 @@ function buildMavenCommand(moduleInfo, profile, skipTests, projectConfig) {
     args.push('-DskipTests=true');
   }
 
-  // Multi-module specific
-  if (moduleInfo.isMultiModule) {
-    args.push('-pl', moduleInfo.artifactId);
-    args.push('-am'); // Also make
-  }
-
   return args;
 }
 
@@ -86,30 +100,120 @@ function buildMavenCommand(moduleInfo, profile, skipTests, projectConfig) {
  * Get Maven profiles for a project
  */
 function getProfiles(profile, projectConfig) {
-  if (!profile || profile === 'none') {
+  // Normalize profile to empty string if none/null
+  const normalizedProfile = (!profile || profile === 'none') ? '' : profile;
+
+  // Check profile_overrides first (including empty string key)
+  const overrides = projectConfig.profile_overrides;
+  if (overrides && overrides[normalizedProfile]) {
+    return overrides[normalizedProfile];
+  }
+
+  // If no profile specified and no override, return empty array
+  if (normalizedProfile === '') {
     return [];
   }
 
   // Check if profile is in available_profiles
   const available = projectConfig.available_profiles || [];
-  if (available.length > 0 && !available.includes(profile)) {
-    const msg = 'Profile \'' + profile + '\' not available. Available: ' + available.join(', ');
+  if (available.length > 0 && !available.includes(normalizedProfile)) {
+    const msg = 'Profile \'' + normalizedProfile + '\' not available. Available: ' + available.join(', ');
     throw new Error(msg);
   }
 
-  // Check profile_overrides
-  const overrides = projectConfig.profile_overrides;
-  if (overrides && overrides[profile]) {
-    return overrides[profile];
+  return [normalizedProfile];
+}
+
+/**
+ * Show restart guidance based on modified files and restart rules
+ */
+async function showRestartGuidance(moduleInfo, projectConfig) {
+  console.log(chalk.blue('=== Restart Guidance ==='));
+
+  const restartRules = projectConfig.restart_rules;
+
+  // Check if it's a global module
+  if (moduleInfo.isGlobalModule) {
+    console.log(chalk.red('Restart required: YES'));
+    console.log('Reason: Global module deployment');
+    console.log('');
+    return;
   }
 
-  return [profile];
+  // For WAR files, typically hot deployment (no restart needed)
+  if (moduleInfo.packaging === 'war') {
+    console.log(chalk.yellow('Restart required: NO'));
+    console.log('Reason: WAR hot-deployment');
+    console.log('');
+    return;
+  }
+
+  // For JAR/EJB files, check restart rules if configured
+  if (!restartRules || !restartRules.patterns) {
+    console.log(chalk.yellow('Restart required: CHECK MANUALLY'));
+    console.log('Reason: No restart rules configured');
+    console.log('');
+    return;
+  }
+
+  try {
+    // Get modified files from git
+    const result = await $`cd ${moduleInfo.path} && git diff --name-only HEAD`.text();
+    const modifiedFiles = result.trim().split('\n').filter(f => f);
+
+    if (modifiedFiles.length === 0) {
+      console.log(chalk.green('Restart required: NO'));
+      console.log('Reason: No files modified');
+      console.log('');
+      return;
+    }
+
+    // Check files against restart patterns
+    const matches = [];
+    for (const file of modifiedFiles) {
+      for (const rule of restartRules.patterns) {
+        const regex = new RegExp(rule.match);
+        if (regex.test(file)) {
+          matches.push({ file, ...rule });
+        }
+      }
+    }
+
+    if (matches.length === 0) {
+      console.log(chalk.green('Restart required: NO'));
+      console.log('Reason: No critical files modified');
+      console.log('');
+      return;
+    }
+
+    // Show restart requirement
+    const hasRequired = matches.some(m => m.severity === 'required');
+    if (hasRequired) {
+      console.log(chalk.red('Restart required: YES'));
+    } else {
+      console.log(chalk.yellow('Restart required: RECOMMENDED'));
+    }
+
+    // Show matched files and reasons
+    matches.forEach(match => {
+      const severity = match.severity === 'required' ? chalk.red('[REQUIRED]') : chalk.yellow('[RECOMMENDED]');
+      console.log(`  ${severity} ${match.file}`);
+      console.log(`    Reason: ${match.reason}`);
+    });
+    console.log('');
+
+  } catch (error) {
+    // Git not available or not a git repo
+    console.log(chalk.yellow('Restart required: CHECK MANUALLY'));
+    console.log('Reason: Unable to detect file changes');
+    console.log('');
+  }
 }
 
 /**
  * Show built artifacts
  */
-function showArtifacts(moduleInfo) {
+function showArtifacts(moduleInfo, projectConfig) {
   console.log(chalk.blue('=== Artifacts ==='));
 
   const targetPath = path.join(moduleInfo.path, 'target');
@@ -117,7 +221,7 @@ function showArtifacts(moduleInfo) {
 
   if (artifacts.length === 0) {
     console.log('No artifacts found');
-    return;
+    return null;
   }
 
   artifacts.forEach(artifact => {
@@ -125,9 +229,18 @@ function showArtifacts(moduleInfo) {
   });
 
   console.log('');
-  console.log(chalk.blue('=== Restart Guidance ==='));
-  console.log('Check if restart is required based on your deployment configuration.');
-  console.log('');
+
+  // Return the first artifact path
+  return artifacts[0];
+}
+
+/**
+ * Show artifacts and restart guidance
+ */
+async function showArtifactsAndGuidance(moduleInfo, projectConfig) {
+  const artifactPath = showArtifacts(moduleInfo, projectConfig);
+  await showRestartGuidance(moduleInfo, projectConfig);
+  return artifactPath;
 }
 
 /**
@@ -135,7 +248,6 @@ function showArtifacts(moduleInfo) {
  */
 function findArtifacts(targetPath, packaging) {
   try {
-    const fs = require('fs');
     if (!fs.existsSync(targetPath)) {
       return [];
     }
@@ -153,7 +265,6 @@ function findArtifacts(targetPath, packaging) {
  */
 function confirm(message) {
   return new Promise(resolve => {
-    const readline = require('readline');
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout
@@ -166,7 +277,7 @@ function confirm(message) {
   });
 }
 
-module.exports = {
+export {
   buildModule,
   buildMavenCommand,
   getProfiles,

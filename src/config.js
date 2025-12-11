@@ -1,7 +1,8 @@
-const yaml = require('js-yaml');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import yaml from 'js-yaml';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import embeddedConfig from '../config.yaml';
 
 /**
  * Load and parse config.yaml
@@ -27,7 +28,8 @@ function loadConfig(configPath) {
       return expandPaths(doc);
     }
 
-    throw new Error('Config file not found');
+    // Fall back to embedded config (Bun's YAML loader automatically parses it)
+    return expandPaths(embeddedConfig);
   } catch (error) {
     throw new Error('Failed to load config: ' + error.message);
   }
@@ -70,7 +72,7 @@ function getClientConfig(project, clientName) {
   return project.clients[clientName];
 }
 
-module.exports = {
+export {
   loadConfig,
   getClientConfig,
   expandPaths

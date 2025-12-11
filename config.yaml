@@ -14,12 +14,15 @@ projects:
     wildfly_mode: domain
     server_group: other-server-group
 
-    # Remote deployment (instructions only)
-    remote:
-      host: TEST-SINFOMAR-TRIESTE-111
-      user: root
-      wildfly_path: /opt/wildfly
-      restart_cmd: service wildfly stop && service wildfly start
+    clients:
+      trieste:
+        remote:
+          host: TEST-SINFOMAR-TRIESTE-111
+          user: root
+          wildfly_path: /opt/wildfly
+          restart_cmd: service wildfly stop && service wildfly start
+
+    default_client: trieste
 
     # Module mappings (path for global modules, "" for normal deployment)
     modules:
@@ -46,8 +49,6 @@ projects:
     wildfly_root: ~/ApplicationServer/wildfly-mto-3_0
     wildfly_mode: standalone
 
-    # Client-specific configurations for remote deployment
-    # Use --client parameter to select which remote to deploy to
     clients:
       metro:
         remote:
@@ -62,7 +63,6 @@ projects:
           wildfly_path: /wildfly
           restart_cmd: systemctl restart wildfly-standard
 
-    # Default client (can be overridden with --client flag)
     default_client: psa
 
     # Module mappings (path for global modules, "" for normal deployment)
