@@ -8,7 +8,7 @@ import fs from 'fs';
  * Build a Maven module
  */
 async function buildModule(detection, profile, options = {}) {
-  const { project, projectConfig, module: moduleInfo } = detection;
+  const { project, projectConfig, restartRules, module: moduleInfo } = detection;
   const skipTests = options.skipTests || projectConfig.skip_tests || false;
 
   console.log(chalk.blue('=== Build Plan ==='));
@@ -45,7 +45,7 @@ async function buildModule(detection, profile, options = {}) {
     console.log(chalk.green('Build completed successfully'));
 
     // Show artifacts, restart guidance, and get artifact path
-    const artifactPath = await showArtifactsAndGuidance(moduleInfo, projectConfig);
+    const artifactPath = await showArtifactsAndGuidance(moduleInfo, restartRules);
 
     // Return the artifact path for caller to use
     return artifactPath;
@@ -125,10 +125,8 @@ function getProfiles(profile, projectConfig) {
 /**
  * Show restart guidance based on modified files and restart rules
  */
-async function showRestartGuidance(moduleInfo, projectConfig) {
+async function showRestartGuidance(moduleInfo, restartRules) {
   console.log(chalk.blue('=== Restart Guidance ==='));
-
-  const restartRules = projectConfig.restart_rules;
 
   // Check if it's a global module
   if (moduleInfo.isGlobalModule) {
@@ -228,10 +226,24 @@ function showArtifacts(moduleInfo) {
 /**
  * Show artifacts and restart guidance
  */
-async function showArtifactsAndGuidance(moduleInfo, projectConfig) {
+async function showArtifactsAndGuidance(moduleInfo, restartRules) {
   const artifactPath = showArtifacts(moduleInfo);
-  await showRestartGuidance(moduleInfo, projectConfig);
+  await showRestartGuidance(moduleInfo, restartRules);
   return artifactPath;
+}
+
+/**
+ * Map Maven packaging type to actual file extension
+ */
+function getArtifactExtension(packaging) {
+  const extensionMap = {
+    'ejb': 'jar',      // EJB modules produce JAR files
+    'war': 'war',
+    'jar': 'jar',
+    'ear': 'ear',
+    'pom': 'pom'
+  };
+  return extensionMap[packaging] || packaging;
 }
 
 /**
@@ -243,8 +255,9 @@ function findArtifacts(targetPath, packaging) {
       return [];
     }
 
+    const extension = getArtifactExtension(packaging);
     return fs.readdirSync(targetPath)
-      .filter(file => file.endsWith('.' + packaging))
+      .filter(file => file.endsWith('.' + extension))
       .map(file => path.join(targetPath, file));
   } catch (error) {
     return [];

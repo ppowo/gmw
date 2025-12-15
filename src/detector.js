@@ -46,6 +46,7 @@ function detectProject(config, cwd) {
   return {
     project: matchedProject.name,
     projectConfig: matchedProject.config,
+    restartRules: config.restart_rules,
     pomPath,
     module: moduleInfo
   };
@@ -96,8 +97,9 @@ function detectModule(pomPath, pom, projectConfig) {
   const modulePath = path.dirname(pomPath);
   const relativePath = path.relative(projectConfig.base_path, modulePath);
 
-  // Determine deployment type
-  const moduleConfig = projectConfig.modules?.[artifactId];
+  // Determine deployment type - try artifactId first, then directory name
+  const dirName = path.basename(modulePath);
+  const moduleConfig = projectConfig.modules?.[artifactId] ?? projectConfig.modules?.[dirName];
   const isGlobalModule = moduleConfig && moduleConfig !== '';
 
   // Check if this is part of a multi-module build

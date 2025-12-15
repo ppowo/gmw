@@ -63,8 +63,8 @@ async function deployArtifact(artifactPath, detection) {
  * Deploy global module to WildFly modules directory
  */
 function deployGlobalModule(artifactPath, wildflyConfig, moduleInfo) {
-  const modulesDir = path.join(wildflyConfig.root, 'modules');
-  const modulePath = path.join(modulesDir, moduleInfo.deploymentPath, 'main');
+  // deploymentPath already contains the full path from wildfly_root (e.g., "modules/ejbmto/main")
+  const modulePath = path.join(wildflyConfig.root, moduleInfo.deploymentPath);
 
   console.log(chalk.blue('=== Global Module Deployment ==='));
   console.log(`Source: ${artifactPath}`);
