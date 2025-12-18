@@ -101,24 +101,18 @@ function getProfiles(profile, projectConfig) {
   // Normalize profile to empty string if none/null
   const normalizedProfile = (!profile || profile === 'none') ? '' : profile;
 
-  // Check profile_overrides first (including empty string key)
-  const overrides = projectConfig.profile_overrides;
-  if (overrides && overrides[normalizedProfile]) {
-    return overrides[normalizedProfile];
+  // Check maven_profiles first (including empty string key for default behavior)
+  const profiles = projectConfig.maven_profiles;
+  if (profiles && profiles[normalizedProfile]) {
+    return profiles[normalizedProfile];
   }
 
-  // If no profile specified and no override, return empty array
+  // If no profile specified and no mapping, return empty array
   if (normalizedProfile === '') {
     return [];
   }
 
-  // Check if profile is in available_profiles
-  const available = projectConfig.available_profiles || [];
-  if (available.length > 0 && !available.includes(normalizedProfile)) {
-    const msg = `Profile '${normalizedProfile}' not available. Available: ${available.join(', ')}`;
-    throw new Error(msg);
-  }
-
+  // Return the profile as-is (let Maven validate it)
   return [normalizedProfile];
 }
 
@@ -160,16 +154,41 @@ async function showRestartGuidance(moduleInfo, restartRules) {
       return;
     }
 
-    // Check files against restart patterns
-    const matches = [];
-    for (const file of modifiedFiles) {
+    // Filter to only files in the target module
+    const moduleRelativePath = moduleInfo.relativePath || '';
+    const filteredFiles = modifiedFiles.filter(file => {
+      // For multi-module projects, filter by module's relative path
+      if (moduleRelativePath) {
+        return file.startsWith(moduleRelativePath + '/');
+      }
+      // For single-module, all files in the repo belong to the module
+      return true;
+    });
+
+    if (filteredFiles.length === 0) {
+      console.log(chalk.green('Restart required: NO'));
+      console.log('Reason: No files modified in target module');
+      return;
+    }
+
+    // Check files against restart patterns, deduplicating by file (highest severity wins)
+    const matchesByFile = new Map();
+    const severityOrder = { required: 1, recommended: 2 };
+
+    for (const file of filteredFiles) {
       for (const rule of restartRules.patterns) {
         const regex = new RegExp(rule.match);
         if (regex.test(file)) {
-          matches.push({ file, ...rule });
+          const existing = matchesByFile.get(file);
+          // Keep the match with higher severity (lower number = higher priority)
+          if (!existing || severityOrder[rule.severity] < severityOrder[existing.severity]) {
+            matchesByFile.set(file, { file, ...rule });
+          }
         }
       }
     }
+
+    const matches = Array.from(matchesByFile.values());
 
     if (matches.length === 0) {
       console.log(chalk.green('Restart required: NO'));

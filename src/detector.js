@@ -98,16 +98,18 @@ function detectModule(pomPath, pom, projectConfig) {
   const relativePath = path.relative(projectConfig.base_path, modulePath);
 
   // Determine deployment type - try artifactId first, then directory name
+  // Only global modules are listed in config; everything else is normal deployment
   const dirName = path.basename(modulePath);
-  const moduleConfig = projectConfig.modules?.[artifactId] ?? projectConfig.modules?.[dirName];
-  const isGlobalModule = moduleConfig && moduleConfig !== '';
+  const moduleConfig = projectConfig.global_modules?.[artifactId] ?? projectConfig.global_modules?.[dirName];
+  const isGlobalModule = !!moduleConfig;
 
-  // Check if this is part of a multi-module build
-  // Either this pom has modules, OR it has a parent and we're not at the base path
+  // Check if this is a single-repo project (all modules built together)
+  // single_repo: true = one repo, modules built together (e.g., MTO)
+  // single_repo: false = multiple repos, independent builds (e.g., Sinfomar)
+  const isMultiModule = projectConfig.single_repo === true;
+
+  // Extract submodules list if this POM defines any
   const hasModules = pom.project?.modules?.module;
-  const hasParent = pom.project?.parent;
-  const isMultiModule = !!(hasModules || (hasParent && relativePath !== ''));
-
   const modules = hasModules ? (Array.isArray(hasModules) ? hasModules : [hasModules]) : [];
 
   return {

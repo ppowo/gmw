@@ -81,7 +81,7 @@ program
         console.log(chalk.blue('=== Remote Deployment Commands ==='));
         console.log('');
         const wildflyConfig = getWildflyConfig(detection.projectConfig, clientConfig);
-        showRemoteDeploymentGuide(artifactPath, wildflyConfig, clientConfig);
+        showRemoteDeploymentGuide(artifactPath, wildflyConfig, clientConfig, detection.module);
       }
 
       console.log(chalk.blue.bold('\n=== Build Complete ===\n'));
@@ -153,7 +153,7 @@ program
 
       Object.entries(clients).forEach(([name, client]) => {
         const label = chalk.white.bold(name);
-        const remote = client.remote ? `${client.remote.user}@${client.remote.host}` : 'No remote config';
+        const remote = client.host ? `${client.user}@${client.host}` : 'No remote config';
         console.log(`  ${label}: ${remote}`);
       });
 

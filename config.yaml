@@ -1,11 +1,10 @@
 projects:
-  sinfomar: # multiple repos in one directory, domain mode WildFly
+  sinfomar:
     base_path: ~/Work/SinfomarSuite
+    single_repo: false  # Multiple independent repos
 
-    # Build settings
     default_profile: TEST
-    available_profiles: [TEST, PROD]
-    profile_overrides:
+    maven_profiles:
       TEST: [TEST, '!PROD']
       PROD: [PROD, '!TEST']
     skip_tests: true
@@ -16,34 +15,23 @@ projects:
 
     clients:
       trieste:
-        remote:
-          host: TEST-SINFOMAR-TRIESTE-111
-          user: root
-          wildfly_path: /opt/wildfly
-          restart_cmd: service wildfly stop && service wildfly start
-
+        host: TEST-SINFOMAR-TRIESTE-111
+        user: root
+        wildfly_path: /opt/wildfly
+        restart_cmd: service wildfly stop && service wildfly start
     default_client: trieste
 
-    # Module mappings (path for global modules, "" for normal deployment)
-    modules:
-      # Global modules
+    global_modules:
       AllWebServiceClient: modules/ejbpcs/main
       EJBPcs: modules/ejbpcs/main
       EJBPcsRemote: modules/ejbpcs/main
 
-      # Normal deployments
-      # Add your normal modules here with empty string
-      storiamezzo : ""
-      trm: ""
-      # PcsWeb: ""  # ignored
-
-  mto: # single repo with multi-module Maven, standalone mode Wildfly
+  mto:
     base_path: ~/Work/mto-suite
+    single_repo: true  # One repo, built together
 
-    available_profiles: []
-    profile_overrides:
+    maven_profiles:
       "": ['!TEST', '!PROD']
-
     skip_tests: true
 
     wildfly_root: ~/ApplicationServer/wildfly-mto-3_0
@@ -51,28 +39,19 @@ projects:
 
     clients:
       metro:
-        remote:
-          host: TEST-MTO-METROCARGO-101
-          user: root
-          wildfly_path: /wildfly
-          restart_cmd: service wildfly stop && service wildfly start
+        host: TEST-MTO-METROCARGO-101
+        user: root
+        wildfly_path: /wildfly
+        restart_cmd: service wildfly stop && service wildfly start
       psa:
-        remote:
-          host: TEST-MTO-PSA-102
-          user: root
-          wildfly_path: /wildfly
-          restart_cmd: systemctl restart wildfly-standard
-
+        host: TEST-MTO-PSA-102
+        user: root
+        wildfly_path: /wildfly
+        restart_cmd: systemctl restart wildfly-standard
     default_client: psa
 
-    # Module mappings (path for global modules, "" for normal deployment)
-    modules:
-      # Global modules
+    global_modules:
       EJBMtoRemote: modules/ejbmto/main
-
-      # Normal deployments
-      SinfoMto: ""
-      EJBMto: ""
 
 restart_rules:
   global_module: true
