@@ -1,7 +1,10 @@
 import path from 'path';
 import { $ } from 'bun';
 import chalk from 'chalk';
-import fs from 'fs';
+import simpleGit from 'simple-git';
+import { globbySync } from 'globby';
+import micromatch from 'micromatch';
+import logSymbols from 'log-symbols';
 import { confirm } from './utils.js';
 
 /**
@@ -31,7 +34,7 @@ async function buildModule(detection, profile, options = {}) {
   // Confirm build
   const confirmed = await confirm('Proceed with build?');
   if (!confirmed) {
-    console.log(chalk.red('Build cancelled'));
+    console.log(logSymbols.error, chalk.red('Build cancelled'));
     return;
   }
 
@@ -42,7 +45,7 @@ async function buildModule(detection, profile, options = {}) {
     // Execute Maven command with Bun's $ shell
     await $`cd ${cwd} && mvn ${cmdArgs}`;
 
-    console.log(chalk.green('Build completed successfully'));
+    console.log(logSymbols.success, chalk.green('Build completed successfully'));
 
     // Show artifacts, restart guidance, and get artifact path
     const artifactPath = await showArtifactsAndGuidance(moduleInfo, restartRules);
@@ -145,8 +148,9 @@ async function showRestartGuidance(moduleInfo, restartRules) {
 
   try {
     // Get modified files from git
-    const result = await $`cd ${moduleInfo.path} && git diff --name-only HEAD`.text();
-    const modifiedFiles = result.trim().split('\n').filter(f => f);
+    const git = simpleGit(moduleInfo.path);
+    const diff = await git.diff(['--name-only', 'HEAD']);
+    const modifiedFiles = diff.trim().split('\n').filter(f => f);
 
     if (modifiedFiles.length === 0) {
       console.log(chalk.green('Restart required: NO'));
@@ -177,10 +181,8 @@ async function showRestartGuidance(moduleInfo, restartRules) {
 
     for (const file of filteredFiles) {
       for (const rule of restartRules.patterns) {
-        const regex = new RegExp(rule.match);
-        if (regex.test(file)) {
+        if (micromatch.isMatch(file, rule.match)) {
           const existing = matchesByFile.get(file);
-          // Keep the match with higher severity (lower number = higher priority)
           if (!existing || severityOrder[rule.severity] < severityOrder[existing.severity]) {
             matchesByFile.set(file, { file, ...rule });
           }
@@ -252,35 +254,12 @@ async function showArtifactsAndGuidance(moduleInfo, restartRules) {
 }
 
 /**
- * Map Maven packaging type to actual file extension
- */
-function getArtifactExtension(packaging) {
-  const extensionMap = {
-    'ejb': 'jar',      // EJB modules produce JAR files
-    'war': 'war',
-    'jar': 'jar',
-    'ear': 'ear',
-    'pom': 'pom'
-  };
-  return extensionMap[packaging] || packaging;
-}
-
-/**
  * Find artifacts in target directory
  */
 function findArtifacts(targetPath, packaging) {
-  try {
-    if (!fs.existsSync(targetPath)) {
-      return [];
-    }
-
-    const extension = getArtifactExtension(packaging);
-    return fs.readdirSync(targetPath)
-      .filter(file => file.endsWith('.' + extension))
-      .map(file => path.join(targetPath, file));
-  } catch (error) {
-    return [];
-  }
+  const extensionMap = { ejb: 'jar', war: 'war', jar: 'jar', ear: 'ear', pom: 'pom' };
+  const ext = extensionMap[packaging] || packaging;
+  return globbySync(`*.${ext}`, { cwd: targetPath, absolute: true });
 }
 
 export {

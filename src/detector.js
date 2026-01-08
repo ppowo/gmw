@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { XMLParser } from 'fast-xml-parser';
+import { findUpSync } from 'find-up';
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -56,18 +57,7 @@ function detectProject(config, cwd) {
  * Walk up directory tree to find pom.xml
  */
 function findPomXml(startPath) {
-  let currentDir = startPath;
-  const rootDir = path.parse(currentDir).root;
-
-  while (currentDir !== rootDir) {
-    const pomPath = path.join(currentDir, 'pom.xml');
-    if (fs.existsSync(pomPath)) {
-      return pomPath;
-    }
-    currentDir = path.dirname(currentDir);
-  }
-
-  return null;
+  return findUpSync('pom.xml', { cwd: startPath }) ?? null;
 }
 
 /**

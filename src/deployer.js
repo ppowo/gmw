@@ -1,16 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
+import prettyBytes from 'pretty-bytes';
+import ms from 'ms';
+import logSymbols from 'log-symbols';
 import { confirm } from './utils.js';
-
-/**
- * Format file size in human-readable format
- */
-function formatSize(bytes) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 /**
  * Create a new deployment result tracker
@@ -64,7 +58,7 @@ function trackMarkerCreated(result, markerPath) {
  */
 function showDeploymentSummary(result) {
   result.endTime = new Date();
-  const duration = ((result.endTime - result.startTime) / 1000).toFixed(2);
+  const duration = ms(result.endTime - result.startTime);
 
   console.log('');
   console.log(chalk.blue('=== What Was Done ==='));
@@ -75,19 +69,19 @@ function showDeploymentSummary(result) {
   for (const action of result.actions) {
     switch (action.type) {
       case 'directory_created':
-        console.log(`  Created directory: ${action.path}`);
+        console.log(`  ${logSymbols.success} Created directory: ${action.path}`);
         break;
       case 'file_copied':
-        console.log(`  Copied file: ${path.basename(action.source)} → ${action.dest} (${formatSize(action.size)})`);
+        console.log(`  ${logSymbols.success} Copied file: ${path.basename(action.source)} → ${action.dest} (${prettyBytes(action.size)})`);
         break;
       case 'marker_created':
-        console.log(`  Created marker: ${action.path}`);
+        console.log(`  ${logSymbols.success} Created marker: ${action.path}`);
         break;
     }
   }
 
   console.log('');
-  console.log(`Duration: ${duration}s`);
+  console.log(`Duration: ${duration}`);
 }
 
 /**
@@ -114,7 +108,7 @@ async function deployArtifact(artifactPath, detection) {
   // Confirm deployment
   const confirmed = await confirm('Proceed with deployment?');
   if (!confirmed) {
-    console.log(chalk.red('Deployment cancelled'));
+    console.log(logSymbols.error, chalk.red('Deployment cancelled'));
     return;
   }
 
@@ -128,7 +122,7 @@ async function deployArtifact(artifactPath, detection) {
       await deployNormal(artifactPath, wildflyConfig, moduleInfo, result);
     }
 
-    console.log(chalk.green('Deployment completed'));
+    console.log(logSymbols.success, chalk.green('Deployment completed'));
 
     // Show what was done
     showDeploymentSummary(result);

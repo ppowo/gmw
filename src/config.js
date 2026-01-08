@@ -1,7 +1,8 @@
 import yaml from 'js-yaml';
 import fs from 'fs';
-import path from 'path';
 import os from 'os';
+import path from 'path';
+import untildify from 'untildify';
 import embeddedConfig from '../config.yaml';
 
 /**
@@ -36,26 +37,19 @@ function loadConfig(configPath) {
 }
 
 /**
- * Expand ~ paths to home directory
+ * Expand ~ paths to home directory (recursive)
  */
 function expandPaths(obj) {
   if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(expandPaths);
 
-  if (Array.isArray(obj)) {
-    return obj.map(expandPaths);
-  }
-
-  const expanded = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (typeof value === 'string' && value.startsWith('~')) {
-      expanded[key] = value.replace('~', os.homedir());
-    } else if (typeof value === 'object') {
-      expanded[key] = expandPaths(value);
-    } else {
-      expanded[key] = value;
-    }
-  }
-  return expanded;
+  return Object.fromEntries(
+    Object.entries(obj).map(([key, value]) => [
+      key,
+      typeof value === 'string' ? untildify(value) :
+      typeof value === 'object' ? expandPaths(value) : value
+    ])
+  );
 }
 
 /**
