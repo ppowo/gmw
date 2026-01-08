@@ -18,7 +18,7 @@ projects:
         host: TEST-SINFOMAR-TRIESTE-111
         user: root
         wildfly_path: /opt/wildfly
-        restart_cmd: service wildfly stop && service wildfly start
+        restart_cmd: service wildfly restart
     default_client: trieste
 
     global_modules:
@@ -42,12 +42,12 @@ projects:
         host: TEST-MTO-METROCARGO-101
         user: root
         wildfly_path: /wildfly
-        restart_cmd: service wildfly stop && service wildfly start
+        restart_cmd: service wildfly restart
       psa:
         host: TEST-MTO-PSA-102
         user: root
         wildfly_path: /wildfly
-        restart_cmd: systemctl restart wildfly-standard
+        restart_cmd: service wildfly restart
     default_client: psa
 
     global_modules:
