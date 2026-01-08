@@ -103,14 +103,10 @@ function detectModule(pomPath, pom, projectConfig) {
   const moduleConfig = projectConfig.global_modules?.[artifactId] ?? projectConfig.global_modules?.[dirName];
   const isGlobalModule = !!moduleConfig;
 
-  // Check if this is a single-repo project (all modules built together)
-  // single_repo: true = one repo, modules built together (e.g., MTO)
-  // single_repo: false = multiple repos, independent builds (e.g., Sinfomar)
-  const isMultiModule = projectConfig.single_repo === true;
-
-  // Extract submodules list if this POM defines any
-  const hasModules = pom.project?.modules?.module;
-  const modules = hasModules ? (Array.isArray(hasModules) ? hasModules : [hasModules]) : [];
+  // Check if this is a reactor build (Maven -pl flag used)
+  // reactor_build: true = build from root with -pl flag (e.g., MTO)
+  // reactor_build: false = build from module directory directly (e.g., Sinfomar)
+  const isReactorBuild = projectConfig.reactor_build === true;
 
   return {
     artifactId,
@@ -119,8 +115,7 @@ function detectModule(pomPath, pom, projectConfig) {
     relativePath,
     isGlobalModule,
     deploymentPath: moduleConfig || '',
-    isMultiModule,
-    modules
+    isReactorBuild
   };
 }
 

@@ -1,8 +1,8 @@
 import path from 'path';
 import { $ } from 'bun';
 import chalk from 'chalk';
-import readline from 'readline';
 import fs from 'fs';
+import { confirm } from './utils.js';
 
 /**
  * Build a Maven module
@@ -37,7 +37,7 @@ async function buildModule(detection, profile, options = {}) {
 
   // Execute build
   try {
-    const cwd = moduleInfo.isMultiModule ? projectConfig.base_path : moduleInfo.path;
+    const cwd = moduleInfo.isReactorBuild ? projectConfig.base_path : moduleInfo.path;
 
     // Execute Maven command with Bun's $ shell
     await $`cd ${cwd} && mvn ${cmdArgs}`;
@@ -74,8 +74,8 @@ function buildMavenCommand(moduleInfo, profile, skipTests, projectConfig) {
     args.push('install');
   }
 
-  // Multi-module specific - use relative path for -pl
-  if (moduleInfo.isMultiModule) {
+  // Reactor build specific - use relative path for -pl
+  if (moduleInfo.isReactorBuild) {
     args.push('-pl', moduleInfo.relativePath);
     args.push('-am'); // Also make dependencies
   }
@@ -283,28 +283,10 @@ function findArtifacts(targetPath, packaging) {
   }
 }
 
-/**
- * Simple confirmation prompt
- */
-function confirm(message) {
-  return new Promise(resolve => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
-
-    rl.question(message + ' (y/N) ', answer => {
-      rl.close();
-      resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
-    });
-  });
-}
-
 export {
   buildModule,
   buildMavenCommand,
   getProfiles,
   showArtifacts,
-  findArtifacts,
-  confirm
+  findArtifacts
 };

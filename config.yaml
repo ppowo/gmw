@@ -1,7 +1,7 @@
 projects:
   sinfomar:
     base_path: ~/Work/SinfomarSuite
-    single_repo: false  # Multiple independent repos
+    reactor_build: false  # Independent module builds
 
     default_profile: TEST
     maven_profiles:
@@ -28,7 +28,7 @@ projects:
 
   mto:
     base_path: ~/Work/mto-suite
-    single_repo: true  # One repo, built together
+    reactor_build: true  # Maven reactor build with -pl flag
 
     maven_profiles:
       "": ['!TEST', '!PROD']
@@ -54,7 +54,6 @@ projects:
       EJBMtoRemote: modules/ejbmto/main
 
 restart_rules:
-  global_module: true
   patterns:
     - match: "entities/.*\\.java"
       reason: "Entity class modification"

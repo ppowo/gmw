@@ -52,11 +52,6 @@ program
         clientConfig = getClientConfig(detection.projectConfig, clientName);
       }
 
-      if (options.client && !clientConfig) {
-        console.error(chalk.red(`Client '${options.client}' not found`));
-        process.exit(1);
-      }
-
       console.log(chalk.green(`Detected project: ${detection.project}`));
       console.log(chalk.green(`Module: ${detection.module.artifactId}`));
 
@@ -99,7 +94,7 @@ program
   .command('deploy')
   .description('Deploy artifact to WildFly')
   .argument('<artifact>', 'Path to artifact JAR/WAR file')
-  .action(async (artifact, options) => {
+  .action(async (artifact) => {
     try {
       console.log(chalk.blue.bold('\n=== JMW Deploy ===\n'));
 

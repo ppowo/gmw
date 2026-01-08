@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
-import readline from 'readline';
+import { confirm } from './utils.js';
 
 /**
  * Format file size in human-readable format
@@ -134,7 +134,7 @@ async function deployArtifact(artifactPath, detection) {
     showDeploymentSummary(result);
 
     // Show restart guidance
-    showRestartGuidance(wildflyConfig);
+    showRestartGuidance(wildflyConfig, moduleInfo);
 
     // Show remote deployment guide if configured (use default client)
     const defaultClientName = projectConfig.default_client;
@@ -259,12 +259,10 @@ function getWildflyConfig(projectConfig, clientConfig) {
 /**
  * Show restart guidance
  */
-function showRestartGuidance(wildflyConfig) {
+function showRestartGuidance(wildflyConfig, moduleInfo) {
   console.log(chalk.blue('=== Restart Guidance ==='));
 
-  const isGlobalModule = wildflyConfig.globalModule;
-
-  if (isGlobalModule) {
+  if (moduleInfo.isGlobalModule) {
     console.log(chalk.red('Restart required: YES'));
     console.log('Global modules require WildFly restart.');
   } else {
@@ -319,23 +317,6 @@ function showRemoteDeploymentGuide(artifactPath, wildflyConfig, clientConfig, mo
   }
 }
 
-/**
- * Simple confirmation prompt
- */
-function confirm(message) {
-  return new Promise(resolve => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout
-    });
-
-    rl.question(message + ' (y/N) ', answer => {
-      rl.close();
-      resolve(answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes');
-    });
-  });
-}
-
 export {
   deployArtifact,
   getWildflyConfig,
@@ -344,6 +325,5 @@ export {
   deployStandalone,
   deployDomain,
   showRestartGuidance,
-  showRemoteDeploymentGuide,
-  confirm
+  showRemoteDeploymentGuide
 };
