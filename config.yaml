@@ -48,7 +48,7 @@ projects:
         user: root
         wildfly_path: /wildfly
         restart_cmd: service wildfly restart
-    default_client: psa
+    default_client: metro
 
     global_modules:
       EJBMtoRemote: modules/ejbmto/main
