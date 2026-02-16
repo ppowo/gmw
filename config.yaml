@@ -19,6 +19,7 @@ projects:
         user: root
         wildfly_path: /opt/wildfly
         restart_cmd: service wildfly restart
+        remote_copy_dir: /root/war
     default_client: trieste
 
     global_modules:

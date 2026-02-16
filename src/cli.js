@@ -76,7 +76,7 @@ program
         console.log(chalk.blue('=== Remote Deployment Commands ==='));
         console.log('');
         const wildflyConfig = getWildflyConfig(detection.projectConfig, clientConfig);
-        showRemoteDeploymentGuide(artifactPath, wildflyConfig, clientConfig, detection.module);
+        showRemoteDeploymentGuide(artifactPath, wildflyConfig, clientConfig, detection.module, detection.project);
       }
 
       console.log(chalk.blue.bold('\n=== Build Complete ===\n'));

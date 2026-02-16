@@ -153,7 +153,7 @@ async function deployArtifact(artifactPath, detection) {
       const defaultClient = projectConfig.clients[defaultClientName];
       console.log('');
       console.log(chalk.blue(`=== Remote Deployment Instructions (Default Client: ${defaultClientName}) ===`));
-      showRemoteDeploymentGuide(artifactPath, wildflyConfig, defaultClient, moduleInfo);
+      showRemoteDeploymentGuide(artifactPath, wildflyConfig, defaultClient, moduleInfo, project);
     }
 
   } catch (error) {
@@ -314,14 +314,28 @@ function showRestartGuidance(wildflyConfig, moduleInfo) {
 /**
  * Show remote deployment guide
  */
-function showRemoteDeploymentGuide(artifactPath, wildflyConfig, clientConfig, moduleInfo) {
+function showRemoteDeploymentGuide(artifactPath, wildflyConfig, clientConfig, moduleInfo, projectName = '') {
   const artifactName = path.basename(artifactPath);
+  const artifactExtension = path.extname(artifactName).toLowerCase();
   const logPath = clientConfig.wildfly_path + '/' + wildflyConfig.mode + '/log/server.log';
 
   // Use sudo only if not root
   const sudo = clientConfig.user === 'root' ? '' : 'sudo ';
 
-  if (moduleInfo && moduleInfo.isGlobalModule) {
+  // Sinfomar custom behavior: only generate WAR copy command
+  const defaultRemoteCopyDir = wildflyConfig.mode === 'domain'
+    ? '/tmp'
+    : `${clientConfig.wildfly_path}/${wildflyConfig.mode}/deployments`;
+  const remoteCopyDir = clientConfig.remote_copy_dir || defaultRemoteCopyDir;
+
+  if (projectName === 'sinfomar') {
+    if (artifactExtension !== '.war') {
+      console.log(chalk.yellow(`${artifactName} is not a .war`));
+      return;
+    }
+
+    console.log(`   scp ${artifactPath} ${clientConfig.user}@${clientConfig.host}:${remoteCopyDir}/`);
+  } else if (moduleInfo && moduleInfo.isGlobalModule) {
     // Global module deployment - copy to modules directory and restart
     const modulesPath = clientConfig.wildfly_path + '/' + moduleInfo.deploymentPath;
 
