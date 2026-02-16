@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { execFileSync } from 'child_process';
 import chalk from 'chalk';
 import prettyBytes from 'pretty-bytes';
 import ms from 'ms';
@@ -54,6 +55,18 @@ function trackMarkerCreated(result, markerPath) {
 }
 
 /**
+ * Track a CLI deployment action
+ */
+function trackCliDeploy(result, cliPath, command) {
+  result.actions.push({
+    type: 'cli_deploy',
+    cliPath,
+    command,
+    timestamp: new Date()
+  });
+}
+
+/**
  * Display deployment summary
  */
 function showDeploymentSummary(result) {
@@ -76,6 +89,10 @@ function showDeploymentSummary(result) {
         break;
       case 'marker_created':
         console.log(`  ${logSymbols.success} Created marker: ${action.path}`);
+        break;
+      case 'cli_deploy':
+        console.log(`  ${logSymbols.success} Deployed via CLI: ${action.cliPath}`);
+        console.log(`    Command: ${action.command}`);
         break;
     }
   }
@@ -216,25 +233,45 @@ function deployStandalone(artifactPath, wildflyConfig, moduleInfo, result) {
  */
 function deployDomain(artifactPath, wildflyConfig, moduleInfo, result) {
   const artifactName = path.basename(artifactPath);
-  const deploymentsDir = path.join(wildflyConfig.root, 'domain', 'deployments');
+  const cliPath = path.join(wildflyConfig.root, 'bin', 'jboss-cli.sh');
 
   console.log(`Server Group: ${wildflyConfig.serverGroup}`);
   console.log(`Artifact: ${artifactName}`);
-  console.log(chalk.yellow('Use jboss-cli.sh to deploy:'));
-  console.log(`  deploy ${artifactPath} --server-groups=${wildflyConfig.serverGroup}`);
 
-  // Create directory if needed
-  if (!fs.existsSync(deploymentsDir)) {
-    fs.mkdirSync(deploymentsDir, { recursive: true });
-    trackDirCreated(result, deploymentsDir);
+  if (!wildflyConfig.serverGroup) {
+    throw new Error('Missing server_group in configuration for domain mode');
   }
 
-  // Copy to deployments dir (for reference)
-  const destPath = path.join(deploymentsDir, artifactName);
-  fs.copyFileSync(artifactPath, destPath);
-  trackFileCopy(result, artifactPath, destPath);
+  if (!fs.existsSync(cliPath)) {
+    throw new Error(`jboss-cli.sh not found: ${cliPath}`);
+  }
 
-  console.log(chalk.green('Copied to: ' + destPath));
+  const deployCommand = `deploy ${artifactPath} --name=${artifactName} --runtime-name=${artifactName} --server-groups=${wildflyConfig.serverGroup}`;
+  const undeployCommand = `undeploy ${artifactName} --server-groups=${wildflyConfig.serverGroup}`;
+
+  console.log(chalk.yellow('Executing jboss-cli.sh deploy (domain mode):'));
+  console.log(`  ${deployCommand}`);
+
+  try {
+    // In domain mode, --force cannot be combined with --server-groups.
+    // We perform a safe replace: undeploy from server group (best-effort), then deploy.
+    try {
+      execFileSync(cliPath, ['--connect', `--commands=${undeployCommand}`], {
+        stdio: 'inherit'
+      });
+    } catch (_err) {
+      // Ignore undeploy failures (e.g. first deployment / not currently assigned).
+    }
+
+    execFileSync(cliPath, ['--connect', `--commands=${deployCommand}`], {
+      stdio: 'inherit'
+    });
+
+    trackCliDeploy(result, cliPath, `${undeployCommand} ; ${deployCommand}`);
+    console.log(chalk.green('Deployed via CLI to server group: ' + wildflyConfig.serverGroup));
+  } catch (error) {
+    throw new Error(`Domain deployment failed via jboss-cli.sh: ${error.message}`);
+  }
 }
 
 /**
@@ -297,17 +334,28 @@ function showRemoteDeploymentGuide(artifactPath, wildflyConfig, clientConfig, mo
     console.log(chalk.yellow('3. Watch server logs:'));
     console.log(`   ssh ${clientConfig.user}@${clientConfig.host} "${sudo}tail -n 20 -f ${logPath}"`);
   } else {
-    // Normal hot deployment
-    const deploymentsPath = clientConfig.wildfly_path + '/' + wildflyConfig.mode + '/deployments';
+    if (wildflyConfig.mode === 'domain') {
+      console.log(chalk.yellow('1. Copy artifact to WildFly host (temporary path):'));
+      console.log(`   scp ${artifactPath} ${clientConfig.user}@${clientConfig.host}:/tmp/${artifactName}`);
+      console.log('');
+      console.log(chalk.yellow('2. Deploy using jboss-cli (domain mode):'));
+      console.log(`   ssh ${clientConfig.user}@${clientConfig.host} "${sudo}${clientConfig.wildfly_path}/bin/jboss-cli.sh --connect --commands='deploy /tmp/${artifactName} --name=${artifactName} --runtime-name=${artifactName} --server-groups=${wildflyConfig.serverGroup} --force'"`);
+      console.log('');
+      console.log(chalk.yellow('3. Watch deployment logs:'));
+      console.log(`   ssh ${clientConfig.user}@${clientConfig.host} "${sudo}tail -n 20 -f ${logPath}"`);
+    } else {
+      // Normal hot deployment (standalone mode)
+      const deploymentsPath = clientConfig.wildfly_path + '/' + wildflyConfig.mode + '/deployments';
 
-    console.log(chalk.yellow('1. Copy artifact to WildFly:'));
-    console.log(`   scp ${artifactPath} ${clientConfig.user}@${clientConfig.host}:${deploymentsPath}/`);
-    console.log('');
-    console.log(chalk.yellow('2. Trigger hot deployment:'));
-    console.log(`   ssh ${clientConfig.user}@${clientConfig.host} "${sudo}touch ${deploymentsPath}/${artifactName}.dodeploy"`);
-    console.log('');
-    console.log(chalk.yellow('3. Watch deployment logs:'));
-    console.log(`   ssh ${clientConfig.user}@${clientConfig.host} "${sudo}tail -n 20 -f ${logPath}"`);
+      console.log(chalk.yellow('1. Copy artifact to WildFly:'));
+      console.log(`   scp ${artifactPath} ${clientConfig.user}@${clientConfig.host}:${deploymentsPath}/`);
+      console.log('');
+      console.log(chalk.yellow('2. Trigger hot deployment:'));
+      console.log(`   ssh ${clientConfig.user}@${clientConfig.host} "${sudo}touch ${deploymentsPath}/${artifactName}.dodeploy"`);
+      console.log('');
+      console.log(chalk.yellow('3. Watch deployment logs:'));
+      console.log(`   ssh ${clientConfig.user}@${clientConfig.host} "${sudo}tail -n 20 -f ${logPath}"`);
+    }
   }
 }
 

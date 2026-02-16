@@ -24,7 +24,7 @@ program
   .command('build')
   .description('Build a Maven module')
   .argument('[profile]', 'Maven profile (e.g., TEST, PROD)')
-  .option('--client <name>', 'Target client (shows remote deployment commands after build)')
+  .option('-c, --client <name>', 'Target client (shows remote deployment commands after build)')
   .option('--skip-tests', 'Skip tests during build')
   .action(async (profile, options) => {
     try {
