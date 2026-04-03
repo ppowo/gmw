@@ -33,6 +33,8 @@ function registerBuildCommand(program) {
         assertValidBuildLocation(detection);
 
         const clientSelection = resolveClientSelection(detection.projectConfig, options.client);
+
+        assertClientRequired(detection.projectConfig, clientSelection);
         printBuildContext(clientSelection);
 
         const lifecycle = createLifecycle([
@@ -86,15 +88,25 @@ function assertValidBuildLocation(detection, cwd = process.cwd()) {
   throw new Error(`No module pom.xml found for '${attemptedPath}'. Run jmw from a module directory instead of falling back to reactor root '${detection.module.artifactId}'.`);
 }
 
+function assertClientRequired(projectConfig, clientSelection) {
+  if (clientSelection.clientConfig) {
+    return;
+  }
+
+  const availableClients = projectConfig.clients ? Object.keys(projectConfig.clients) : [];
+  
+  if (availableClients.length > 0) {
+    throw new Error(`Client required. Available clients: ${availableClients.join(', ')}`);
+  }
+}
+
 function printBuildContext(clientSelection) {
   if (!clientSelection.clientConfig) {
     return;
   }
 
   const sourceLabels = {
-    requested: 'requested',
-    default: 'default',
-    'first-available': 'first available'
+    requested: 'requested'
   };
 
   printInfo(joinDetails([
