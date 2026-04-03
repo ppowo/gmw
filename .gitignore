@@ -3,7 +3,6 @@ node_modules/
 
 # Package manager
 package-lock.json
-yarn.lock
 
 # Build output
 dist/

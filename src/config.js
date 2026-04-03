@@ -1,39 +1,50 @@
-import yaml from 'js-yaml';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { createRequire } from 'module';
+import defaultConfig from '../config.cjs';
 import untildify from 'untildify';
-import embeddedConfig from '../config.yaml';
+const require = createRequire(path.resolve(process.cwd(), '__jmw_loader__.cjs'));
 
 /**
- * Load and parse config.yaml
+ * Load and parse config.cjs
  * Expands ~ paths to home directory
  * Supports client parameter for remote deployments
  */
 function loadConfig(configPath) {
   if (!configPath) {
-    configPath = path.join(os.homedir(), '.config', 'jmw', 'config.yaml');
+    configPath = path.join(os.homedir(), '.config', 'jmw', 'config.cjs');
   }
 
   try {
     // Try user config first
     if (fs.existsSync(configPath)) {
-      const doc = yaml.load(fs.readFileSync(configPath, 'utf8'));
-      return expandPaths(doc);
+      return loadJsConfigFile(configPath);
     }
 
-    // Fall back to config.yaml in project directory
-    const localConfig = path.join(process.cwd(), 'config.yaml');
+    // Fall back to config.cjs in project directory
+    const localConfig = path.join(process.cwd(), 'config.cjs');
     if (fs.existsSync(localConfig)) {
-      const doc = yaml.load(fs.readFileSync(localConfig, 'utf8'));
-      return expandPaths(doc);
+      return loadJsConfigFile(localConfig);
     }
 
-    // Fall back to embedded config (Bun's YAML loader automatically parses it)
-    return expandPaths(embeddedConfig);
+    // Fall back to embedded defaults so bundled builds keep working after copy/install
+    return expandPaths(cloneConfig(defaultConfig));
   } catch (error) {
     throw new Error(`Failed to load config: ${error.message}`);
   }
+}
+
+function loadJsConfigFile(filePath) {
+  const resolvedPath = path.resolve(filePath);
+  delete require.cache[resolvedPath];
+
+  const config = require(resolvedPath);
+  return expandPaths(cloneConfig(config));
+}
+
+function cloneConfig(config) {
+  return JSON.parse(JSON.stringify(config));
 }
 
 /**

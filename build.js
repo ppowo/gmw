@@ -1,16 +1,36 @@
 import fs from 'fs';
-import { $ } from 'bun';
+import path from 'path';
+import { build } from 'esbuild';
 
-async function build() {
+const distDir = path.resolve('dist');
+const outputFile = path.join(distDir, 'jmw');
+const distPackageJson = path.join(distDir, 'package.json');
+const distConfig = path.join(distDir, 'config.cjs');
+
+async function main() {
   try {
-    console.log('Building jmw with Bun...');
+    console.log('Building jmw with Node + esbuild...');
 
-    if (!fs.existsSync('dist')) {
-      fs.mkdirSync('dist');
-    }
+    fs.rmSync(distDir, { recursive: true, force: true });
+    fs.mkdirSync(distDir, { recursive: true });
 
-    await $`bun build src/cli.js --outfile dist/jmw --banner '#!/usr/bin/env bun' --target bun --minify`;
-    await $`chmod +x dist/jmw`;
+    await build({
+      entryPoints: ['src/cli.js'],
+      outfile: outputFile,
+      bundle: true,
+      platform: 'node',
+      format: 'cjs',
+      target: ['node20'],
+      banner: {
+        js: '#!/usr/bin/env node'
+      },
+      minify: true,
+      legalComments: 'none'
+    });
+
+    fs.copyFileSync('config.cjs', distConfig);
+    fs.writeFileSync(distPackageJson, JSON.stringify({ type: 'commonjs' }, null, 2) + '\n');
+    fs.chmodSync(outputFile, 0o755);
 
     console.log('✓ Build complete: dist/jmw');
   } catch (error) {
@@ -19,4 +39,4 @@ async function build() {
   }
 }
 
-build();
+main();

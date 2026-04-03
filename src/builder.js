@@ -1,12 +1,11 @@
+import { spawn } from 'child_process';
 import path from 'path';
-import { $ } from 'bun';
 import chalk from 'chalk';
 import simpleGit from 'simple-git';
 import { globbySync } from 'globby';
 import micromatch from 'micromatch';
 import logSymbols from 'log-symbols';
 import { confirm } from './utils.js';
-
 /**
  * Build a Maven module
  */
@@ -20,7 +19,6 @@ async function buildModule(detection, profile, options = {}) {
   console.log(`Packaging: ${moduleInfo.packaging}`);
   console.log(`Path: ${moduleInfo.path}`);
   console.log('');
-
   // Show profile
   const effectiveProfile = profile || projectConfig.default_profile || 'none';
   console.log(`Profile: ${effectiveProfile}`);
@@ -30,33 +28,49 @@ async function buildModule(detection, profile, options = {}) {
 
   console.log(chalk.yellow('Command:'), 'mvn', cmdArgs.join(' '));
   console.log('');
-
   // Confirm build
   const confirmed = await confirm('Proceed with build?');
   if (!confirmed) {
     console.log(logSymbols.error, chalk.red('Build cancelled'));
     return;
   }
-
   // Execute build
   try {
     const cwd = moduleInfo.isReactorBuild ? projectConfig.base_path : moduleInfo.path;
-
-    // Execute Maven command with Bun's $ shell
-    await $`cd ${cwd} && mvn ${cmdArgs}`;
+    // Execute Maven command with Node's child_process API
+    await runCommand(getMavenExecutable(), cmdArgs, { cwd });
 
     console.log(logSymbols.success, chalk.green('Build completed successfully'));
-
     // Show artifacts, restart guidance, and get artifact path
     const artifactPath = await showArtifactsAndGuidance(moduleInfo, restartRules);
-
-    // Return the artifact path for caller to use
     return artifactPath;
-
   } catch (error) {
     console.error(chalk.red('Build failed:'), error.message);
     throw error;
   }
+}
+
+function getMavenExecutable() {
+  return process.platform === 'win32' ? 'mvn.cmd' : 'mvn';
+}
+
+function runCommand(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      stdio: 'inherit',
+      ...options
+    });
+
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error(`${command} exited with code ${code}`));
+    });
+  });
 }
 
 /**

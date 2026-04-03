@@ -1,0 +1,79 @@
+module.exports = {
+  projects: {
+    sinfomar: {
+      base_path: '~/Work/SinfomarSuite',
+      reactor_build: false,
+      default_profile: 'TEST',
+      maven_profiles: {
+        TEST: ['TEST', '!PROD'],
+        PROD: ['PROD', '!TEST']
+      },
+      skip_tests: true,
+      wildfly_root: '~/ApplicationServer/wildfly-sinfomar',
+      wildfly_mode: 'domain',
+      server_group: 'other-server-group',
+      clients: {
+        trieste: {
+          host: 'TEST-SINFOMAR-TRIESTE-111',
+          user: 'root',
+          wildfly_path: '/opt/wildfly',
+          restart_cmd: 'service wildfly restart',
+          remote_copy_dir: '/root/war'
+        }
+      },
+      default_client: 'trieste',
+      global_modules: {
+        AllWebServiceClient: 'modules/ejbpcs/main',
+        EJBPcs: 'modules/ejbpcs/main',
+        EJBPcsRemote: 'modules/ejbpcs/main'
+      }
+    },
+    mto: {
+      base_path: '~/Work/mto-suite',
+      reactor_build: true,
+      maven_profiles: {
+        '': ['!TEST', '!PROD']
+      },
+      skip_tests: true,
+      wildfly_root: '~/ApplicationServer/wildfly-mto-3_0',
+      wildfly_mode: 'standalone',
+      clients: {
+        metro: {
+          host: 'TEST-MTO-METROCARGO-101',
+          user: 'root',
+          wildfly_path: '/wildfly',
+          restart_cmd: 'service wildfly restart'
+        },
+        psa: {
+          host: 'TEST-MTO-PSA-102',
+          user: 'root',
+          wildfly_path: '/wildfly',
+          restart_cmd: 'service wildfly restart'
+        }
+      },
+      default_client: 'metro',
+      global_modules: {
+        EJBMtoRemote: 'modules/ejbmto/main'
+      }
+    }
+  },
+  restart_rules: {
+    patterns: [
+      {
+        match: 'entities/.*\\.java',
+        reason: 'Entity class modification',
+        severity: 'required'
+      },
+      {
+        match: 'hibernate\\.cfg\\.xml',
+        reason: 'Hibernate configuration change',
+        severity: 'required'
+      },
+      {
+        match: 'EJB.*\\.java',
+        reason: 'EJB implementation change',
+        severity: 'recommended'
+      }
+    ]
+  }
+};
