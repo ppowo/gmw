@@ -1,11 +1,10 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { build } from 'esbuild';
 
 const distDir = path.resolve('dist');
 const outputFile = path.join(distDir, 'jmw');
 const distPackageJson = path.join(distDir, 'package.json');
-const distConfig = path.join(distDir, 'config.cjs');
 
 async function main() {
   try {
@@ -19,17 +18,16 @@ async function main() {
       outfile: outputFile,
       bundle: true,
       platform: 'node',
-      format: 'cjs',
+      format: 'esm',
       target: ['node20'],
       banner: {
-        js: '#!/usr/bin/env node'
+        js: "#!/usr/bin/env node\nimport { createRequire } from 'node:module';\nconst require = createRequire(import.meta.url);"
       },
       minify: true,
       legalComments: 'none'
     });
 
-    fs.copyFileSync('config.cjs', distConfig);
-    fs.writeFileSync(distPackageJson, JSON.stringify({ type: 'commonjs' }, null, 2) + '\n');
+    fs.writeFileSync(distPackageJson, JSON.stringify({ type: 'module' }, null, 2) + '\n');
     fs.chmodSync(outputFile, 0o755);
 
     console.log('✓ Build complete: dist/jmw');

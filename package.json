@@ -9,7 +9,6 @@
   "files": [
     "dist",
     "src",
-    "config.cjs",
     "README.md",
     "LICENSE"
   ],
@@ -20,7 +19,6 @@
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "install": "node build.js && mkdir -p ~/.bio/bin && cp dist/jmw ~/.bio/bin/",
     "prepack": "node build.js",
-    "test": "node --test",
     "lint": "echo 'No linter configured'"
   },
   "repository": {

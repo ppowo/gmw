@@ -14,66 +14,49 @@ Java Maven WildFly helper CLI for building Maven modules and deploying artifacts
 npm install
 ```
 
-This keeps the current project workflow:
-- builds `dist/jmw`
-- copies `dist/jmw` to `~/.bio/bin/`
-
-You can also build manually:
-
-```bash
-npm run build
-```
+Current workflow is preserved:
+- `npm run build` builds `dist/jmw`
+- `npm run install` copies `dist/jmw` to `~/.bio/bin/`
 
 ## Development
 
 ```bash
 npm run dev
-npm test
 ```
 
 ## Configuration
 
-Configuration is now JavaScript-based.
+Configuration is now fully source-owned.
 
-Lookup order:
-1. `~/.config/jmw/config.cjs`
-2. `./config.cjs`
-3. embedded defaults bundled into the CLI
+- The config lives in `src/config.js`
+- It is bundled into the CLI at build time
+- To change configuration, edit `src/config.js` and rebuild
 
-Example config format:
+There is no external runtime config lookup anymore.
 
-```js
-module.exports = {
-  projects: {
-    myproject: {
-      base_path: '~/Work/myproject',
-      reactor_build: true,
-      maven_profiles: {
-        '': ['!TEST', '!PROD'],
-        TEST: ['TEST', '!PROD']
-      },
-      skip_tests: true,
-      wildfly_root: '~/ApplicationServer/wildfly',
-      wildfly_mode: 'standalone',
-      clients: {
-        demo: {
-          host: 'my-host',
-          user: 'root',
-          wildfly_path: '/wildfly',
-          restart_cmd: 'service wildfly restart'
-        }
-      },
-      default_client: 'demo',
-      global_modules: {}
-    }
-  },
-  restart_rules: {
-    patterns: []
-  }
-};
-```
+## Architecture
 
-See `config.cjs` for the bundled defaults.
+The codebase is split into focused ESM modules:
+
+- `src/cli.js` - CLI wiring
+- `src/commands/` - command handlers
+- `src/project/` - project and module detection
+- `src/build/` - build planning, execution, artifacts, restart analysis
+- `src/deploy/` - deployment planning, execution, remote command generation
+- `src/lifecycle/` - lifecycle stages and handlers
+- `src/config.js` - bundled configuration
+
+## Lifecycle stages
+
+The tool now emits explicit lifecycle stages for maintainability:
+
+- `pre-build` / `post-build`
+- `artifact-found` / `artifact-missing`
+- `restart-required` / `restart-recommended` / `restart-not-required` / `restart-unknown`
+- `pre-deploy` / `post-deploy`
+- `remote-command-generated`
+
+Handlers can react based on target context such as project, packaging, WildFly mode, and whether a module is global.
 
 ## Usage
 

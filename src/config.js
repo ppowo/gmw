@@ -1,55 +1,93 @@
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import { createRequire } from 'module';
-import defaultConfig from '../config.cjs';
 import untildify from 'untildify';
-const require = createRequire(path.resolve(process.cwd(), '__jmw_loader__.cjs'));
 
-/**
- * Load and parse config.cjs
- * Expands ~ paths to home directory
- * Supports client parameter for remote deployments
- */
-function loadConfig(configPath) {
-  if (!configPath) {
-    configPath = path.join(os.homedir(), '.config', 'jmw', 'config.cjs');
-  }
-
-  try {
-    // Try user config first
-    if (fs.existsSync(configPath)) {
-      return loadJsConfigFile(configPath);
+const config = {
+  projects: {
+    sinfomar: {
+      base_path: '~/Work/SinfomarSuite',
+      reactor_build: false,
+      default_profile: 'TEST',
+      maven_profiles: {
+        TEST: ['TEST', '!PROD'],
+        PROD: ['PROD', '!TEST']
+      },
+      skip_tests: true,
+      wildfly_root: '~/ApplicationServer/wildfly-sinfomar',
+      wildfly_mode: 'domain',
+      server_group: 'other-server-group',
+      clients: {
+        trieste: {
+          host: 'TEST-SINFOMAR-TRIESTE-111',
+          user: 'root',
+          wildfly_path: '/opt/wildfly',
+          restart_cmd: 'service wildfly restart',
+          remote_copy_dir: '/root/war'
+        }
+      },
+      default_client: 'trieste',
+      global_modules: {
+        AllWebServiceClient: 'modules/ejbpcs/main',
+        EJBPcs: 'modules/ejbpcs/main',
+        EJBPcsRemote: 'modules/ejbpcs/main'
+      }
+    },
+    mto: {
+      base_path: '~/Work/mto-suite',
+      reactor_build: true,
+      maven_profiles: {
+        '': ['!TEST', '!PROD']
+      },
+      skip_tests: true,
+      wildfly_root: '~/ApplicationServer/wildfly-mto-3_0',
+      wildfly_mode: 'standalone',
+      clients: {
+        metro: {
+          host: 'TEST-MTO-METROCARGO-101',
+          user: 'root',
+          wildfly_path: '/wildfly',
+          restart_cmd: 'service wildfly restart'
+        },
+        psa: {
+          host: 'TEST-MTO-PSA-102',
+          user: 'root',
+          wildfly_path: '/wildfly',
+          restart_cmd: 'service wildfly restart'
+        }
+      },
+      default_client: 'metro',
+      global_modules: {
+        EJBMtoRemote: 'modules/ejbmto/main'
+      }
     }
-
-    // Fall back to config.cjs in project directory
-    const localConfig = path.join(process.cwd(), 'config.cjs');
-    if (fs.existsSync(localConfig)) {
-      return loadJsConfigFile(localConfig);
-    }
-
-    // Fall back to embedded defaults so bundled builds keep working after copy/install
-    return expandPaths(cloneConfig(defaultConfig));
-  } catch (error) {
-    throw new Error(`Failed to load config: ${error.message}`);
+  },
+  restart_rules: {
+    patterns: [
+      {
+        match: 'entities/.*\\.java',
+        reason: 'Entity class modification',
+        severity: 'required'
+      },
+      {
+        match: 'hibernate\\.cfg\\.xml',
+        reason: 'Hibernate configuration change',
+        severity: 'required'
+      },
+      {
+        match: 'EJB.*\\.java',
+        reason: 'EJB implementation change',
+        severity: 'recommended'
+      }
+    ]
   }
-}
+};
 
-function loadJsConfigFile(filePath) {
-  const resolvedPath = path.resolve(filePath);
-  delete require.cache[resolvedPath];
-
-  const config = require(resolvedPath);
+function loadConfig() {
   return expandPaths(cloneConfig(config));
 }
 
-function cloneConfig(config) {
-  return JSON.parse(JSON.stringify(config));
+function cloneConfig(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
-/**
- * Expand ~ paths to home directory (recursive)
- */
 function expandPaths(obj) {
   if (!obj || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(expandPaths);
@@ -57,15 +95,15 @@ function expandPaths(obj) {
   return Object.fromEntries(
     Object.entries(obj).map(([key, value]) => [
       key,
-      typeof value === 'string' ? untildify(value) :
-      typeof value === 'object' ? expandPaths(value) : value
+      typeof value === 'string'
+        ? untildify(value)
+        : typeof value === 'object'
+          ? expandPaths(value)
+          : value
     ])
   );
 }
 
-/**
- * Get client configuration for a project
- */
 function getClientConfig(project, clientName) {
   if (!clientName) return null;
 
@@ -78,7 +116,10 @@ function getClientConfig(project, clientName) {
 }
 
 export {
+  config,
   loadConfig,
   getClientConfig,
   expandPaths
 };
+
+export default config;
