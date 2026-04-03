@@ -16,7 +16,6 @@ function registerClientsCommand(program) {
       try {
         const detection = loadDetection();
         const clients = detection.projectConfig.clients;
-        const defaultClient = detection.projectConfig.default_client;
 
         printSection('clients', [formatDetail('project', detection.project)]);
 
@@ -28,8 +27,7 @@ function registerClientsCommand(program) {
         Object.entries(clients).forEach(([name, client]) => {
           printInfo(joinDetails([
             formatDetail('client', name),
-            client.host ? `${client.user}@${client.host}` : 'no remote host',
-            name === defaultClient ? 'default' : ''
+            client.host ? `${client.user}@${client.host}` : 'no remote host'
           ]));
         });
       } catch (error) {

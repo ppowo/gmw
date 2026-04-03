@@ -23,7 +23,6 @@ const config = {
           remote_copy_dir: '/root/war'
         }
       },
-      default_client: 'trieste',
       global_modules: {
         AllWebServiceClient: 'modules/ejbpcs/main',
         EJBPcs: 'modules/ejbpcs/main',
@@ -53,7 +52,6 @@ const config = {
           restart_cmd: 'service wildfly restart'
         }
       },
-      default_client: 'metro',
       global_modules: {
         EJBMtoRemote: 'modules/ejbmto/main'
       }

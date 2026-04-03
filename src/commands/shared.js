@@ -15,23 +15,6 @@ function resolveClientSelection(projectConfig, requestedClient) {
     };
   }
 
-  if (projectConfig.default_client) {
-    return {
-      clientName: projectConfig.default_client,
-      clientConfig: getClientConfig(projectConfig, projectConfig.default_client),
-      source: 'default'
-    };
-  }
-
-  if (projectConfig.clients && Object.keys(projectConfig.clients).length > 0) {
-    const clientName = Object.keys(projectConfig.clients)[0];
-    return {
-      clientName,
-      clientConfig: getClientConfig(projectConfig, clientName),
-      source: 'first-available'
-    };
-  }
-
   return {
     clientName: null,
     clientConfig: null,
