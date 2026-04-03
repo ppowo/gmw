@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { getJavaVersion, checkJavaVersion } from '../java.js';
 import {
   buildModule,
   createBuildTarget
@@ -31,6 +32,7 @@ function registerBuildCommand(program) {
       try {
         const detection = loadDetection();
         assertValidBuildLocation(detection);
+        await assertJavaVersion(detection.projectConfig, detection.project);
 
         const clientSelection = resolveClientSelection(detection.projectConfig, options.client);
 
@@ -98,6 +100,29 @@ function assertClientRequired(projectConfig, clientSelection) {
   if (availableClients.length > 0) {
     throw new Error(`Client required. Available clients: ${availableClients.join(', ')}`);
   }
+}
+
+async function assertJavaVersion(projectConfig, projectName) {
+  const requiredVersion = projectConfig.java_version;
+  
+  if (!requiredVersion) {
+    return;
+  }
+  
+  const currentVersion = await getJavaVersion();
+  const result = checkJavaVersion(requiredVersion, currentVersion);
+  
+  if (result.valid) {
+    printInfo(`Java ${currentVersion.full} ✓`);
+    return;
+  }
+  
+  throw new Error(
+    `Java version mismatch\n` +
+    `  Required: Java ${requiredVersion} (${projectName})\n` +
+    `  Current: Java ${currentVersion.full}\n` +
+    `  Please switch to Java ${requiredVersion} before building this project.`
+  );
 }
 
 function printBuildContext(clientSelection) {

@@ -3,6 +3,7 @@ import untildify from 'untildify';
 const config = {
   projects: {
     sinfomar: {
+      java_version: 17,
       base_path: '~/Work/SinfomarSuite',
       reactor_build: false,
       default_profile: 'TEST',
@@ -30,6 +31,7 @@ const config = {
       }
     },
     mto: {
+      java_version: 11,
       base_path: '~/Work/mto-suite',
       reactor_build: true,
       maven_profiles: {
