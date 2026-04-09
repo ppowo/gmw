@@ -1,4 +1,3 @@
-import path from 'node:path';
 import prettyBytes from 'pretty-bytes';
 import ms from 'ms';
 import {
@@ -43,20 +42,23 @@ function showDeploymentSummary(result) {
   for (const action of result.actions) {
     switch (action.type) {
       case 'directory_created':
-        printInfo(`mkdir ${action.path}`);
+        printInfo(`created directory: ${action.path}`);
         break;
       case 'file_copied':
-        printInfo(`copy ${path.basename(action.source)} → ${action.dest} (${prettyBytes(action.size)})`);
+        printInfo(`copied ${prettyBytes(action.size)}`);
+        printInfo(`  from: ${action.source}`);
+        printInfo(`  to:   ${action.dest}`);
         break;
       case 'marker_created':
-        printInfo(`touch ${action.path}`);
+        printInfo(`created marker: ${action.path}`);
         break;
       case 'cli_deploy':
-        printInfo(`jboss-cli ${action.cliPath}`);
+        printInfo(`executed via: ${action.cliPath}`);
+        printInfo('commands');
         printCommand(action.command);
         break;
     }
-  }
+}
 }
 
 function showDeploymentRestartGuidance(wildflyConfig, moduleInfo) {

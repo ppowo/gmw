@@ -2,7 +2,7 @@ import { confirm } from '../utils.js';
 import { printWarning } from '../output.js';
 import { createDeploymentPlan, getWildflyConfig } from './wildfly.js';
 import { createRemoteDeploymentPlan } from './remote.js';
-import { executeDeploymentPlan, printDeploymentSummary } from './execution.js';
+import { executeDeploymentPlan } from './execution.js';
 import { createLifecycle, LIFECYCLE_STAGES } from '../lifecycle/index.js';
 import { createDeployLifecycleHandlers } from '../lifecycle/console-handlers.js';
 
@@ -23,7 +23,6 @@ async function deployArtifact(artifactPath, detection, options = {}) {
   }
 
   const result = executeDeploymentPlan(plan, options.result);
-  printDeploymentSummary(result);
   await lifecycle.emit(LIFECYCLE_STAGES.POST_DEPLOY, {
     detection,
     plan,

@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { deployArtifact } from '../deploy/index.js';
 import { createLifecycle } from '../lifecycle/index.js';
 import { createDeployLifecycleHandlers } from '../lifecycle/console-handlers.js';
@@ -18,13 +19,12 @@ function registerDeployCommand(program) {
     .action(async (artifact) => {
       try {
         const detection = loadDetection();
-        validateArtifactPath(artifact);
-
+        const artifactPath = validateArtifactPath(artifact);
         const lifecycle = createLifecycle([
           ...createDeployLifecycleHandlers()
         ]);
 
-        await deployArtifact(artifact, detection, { lifecycle });
+        await deployArtifact(artifactPath, detection, { lifecycle });
       } catch (error) {
         printError(error.message);
         process.exit(1);
@@ -33,9 +33,13 @@ function registerDeployCommand(program) {
 }
 
 function validateArtifactPath(artifact) {
-  if (!fs.existsSync(artifact)) {
-    throw new Error(`Artifact not found: ${artifact}`);
+  const artifactPath = path.resolve(artifact);
+
+  if (!fs.existsSync(artifactPath)) {
+    throw new Error(`Artifact not found: ${artifactPath}`);
   }
+
+  return artifactPath;
 }
 
 function printDeployContext(detection, artifact) {
