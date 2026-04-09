@@ -3,10 +3,12 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
   formatDetail,
+  formatBytes,
   joinDetails,
   printCommand,
   printInfo,
-  printSection
+  printSection,
+  printSuccess
 } from '../output.js';
 
 function createDeploymentResult() {
@@ -157,11 +159,38 @@ function deployDomain(artifactPath, wildflyConfig, result) {
   }
 }
 
+function printDeploymentSummary(result) {
+  result.endTime = new Date();
+  const duration = result.endTime - result.startTime;
+
+  printSuccess('deployment complete');
+  printInfo(`duration: ${duration}ms`);
+
+  for (const action of result.actions) {
+    switch (action.type) {
+      case 'file_copied':
+        printInfo(`copied ${formatBytes(action.size)}`);
+        printInfo(`  from: ${action.source}`);
+        printInfo(`  to:   ${action.dest}`);
+        break;
+      case 'directory_created':
+        printInfo(`created directory: ${action.path}`);
+        break;
+      case 'marker_created':
+        printInfo(`created marker: ${action.path}`);
+        break;
+      case 'cli_deploy':
+        printInfo(`executed via: ${action.cliPath}`);
+        break;
+    }
+  }
+}
 export {
   createDeploymentResult,
   executeDeploymentPlan,
   deployGlobalModule,
   deployNormal,
   deployStandalone,
-  deployDomain
+  deployDomain,
+  printDeploymentSummary
 };
